@@ -20,4 +20,8 @@ export const authApi = {
     );
     return response.data;
   },
+
+  forgotPassword: async (email: string): Promise<void> => {
+    await axios.post("/api/auth/forgot-password", { email });
+  },
 };

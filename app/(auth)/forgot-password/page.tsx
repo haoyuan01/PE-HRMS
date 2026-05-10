@@ -9,6 +9,7 @@ import { KeyRound, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { authApi } from "@/lib/api/auth";
 import { ROUTES } from "@/lib/constants";
 
 const forgotPasswordSchema = z.object({
@@ -35,9 +36,7 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     setIsLoading(true);
     try {
-      // TODO: Call forgot password API endpoint
-      // await authApi.forgotPassword(data.email);
-      console.log("Forgot password request for:", data.email);
+      await authApi.forgotPassword(data.email);
       setIsSubmitted(true);
       toast.success("Reset link sent! Check your email.");
     } catch {
