@@ -11,7 +11,7 @@ export default function DashboardPage() {
         Workspace Overview
       </h1>
       <p className="mt-1 text-sm text-on-surface-variant">
-        Welcome back{user?.first_name ? `, ${user.first_name}` : ""}. Here is
+        Welcome back{user?.personal?.first_name ? `, ${user.personal.first_name}` : ""}. Here is
         what is happening with your organization today.
       </p>
     </div>

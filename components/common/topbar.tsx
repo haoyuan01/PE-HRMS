@@ -18,7 +18,7 @@ export function Topbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const initials = user
-    ? (user.first_name?.[0] ?? "") + (user.last_name?.[0] ?? "")
+    ? (user.personal?.first_name?.[0] ?? "") + (user.personal?.last_name?.[0] ?? "")
     : "U";
 
   // Close dropdown on click outside

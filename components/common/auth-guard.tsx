@@ -8,13 +8,13 @@ import { ROUTES } from "@/lib/constants";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, hasHydrated, setUser, clearAuth, setHasHydrated } =
+  const { isAuthenticated, hasHydrated, user, clearAuth, setHasHydrated } =
     useAuthStore();
 
   useEffect(() => {
-    // If user is already authenticated (e.g. just logged in), skip session check
-    if (isAuthenticated) {
-      setHasHydrated(true);
+    // If already authenticated with user data (e.g. just logged in), done
+    if (isAuthenticated && user) {
+      if (!hasHydrated) setHasHydrated(true);
       return;
     }
 
@@ -24,11 +24,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         const session = await authApi.getSession();
         if (session.authenticated) {
           if (session.user) {
-            setUser(session.user);
-          }
-          // Cookie is valid — mark as authenticated even without user details
-          // User details will be populated on next API call if needed
-          if (!session.user) {
+            useAuthStore.getState().setUser(session.user);
+          } else {
             useAuthStore.setState({ isAuthenticated: true });
           }
         } else {
@@ -44,7 +41,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     checkSession();
-  }, [isAuthenticated, setUser, clearAuth, setHasHydrated, router]);
+  }, [isAuthenticated, user, hasHydrated, clearAuth, setHasHydrated, router]);
 
   if (!hasHydrated) {
     return (
