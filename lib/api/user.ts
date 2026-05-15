@@ -24,7 +24,7 @@ export const userApi = {
     return response.data;
   },
 
-  changePassword: async (data: ChangePasswordRequest): Promise<void> => {
-    await apiClient.post("/auth/change-password", data);
+  changePassword: async (uuid: string, data: ChangePasswordRequest): Promise<void> => {
+    await apiClient.patch(`/users/${uuid}/password`, data);
   },
 };

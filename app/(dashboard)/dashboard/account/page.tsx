@@ -40,7 +40,7 @@ export default function AccountPage() {
       ) : (
         <>
           <PersonalInformationForm profile={profile} onSaved={refetch} />
-          <SecurityForm />
+          <SecurityForm userUuid={user!.uuid} />
         </>
       )}
     </div>

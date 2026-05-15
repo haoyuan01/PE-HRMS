@@ -18,18 +18,21 @@ const FIELD_LABEL =
 
 const changePasswordSchema = z
   .object({
-    current_password: z.string().min(1, "Current password is required"),
-    new_password: z.string().min(8, "Password must be at least 8 characters"),
-    new_password_confirmation: z.string().min(1, "Please confirm your new password"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    password_confirmation: z.string().min(1, "Please confirm your new password"),
   })
-  .refine((data) => data.new_password === data.new_password_confirmation, {
+  .refine((data) => data.password === data.password_confirmation, {
     message: "Passwords do not match",
-    path: ["new_password_confirmation"],
+    path: ["password_confirmation"],
   });
 
 type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
-export function SecurityForm() {
+interface SecurityFormProps {
+  userUuid: string;
+}
+
+export function SecurityForm({ userUuid }: SecurityFormProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   const {
@@ -40,20 +43,19 @@ export function SecurityForm() {
   } = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: {
-      current_password: "",
-      new_password: "",
-      new_password_confirmation: "",
+      password: "",
+      password_confirmation: "",
     },
   });
 
   const onSubmit = async (data: ChangePasswordFormValues) => {
     setIsSaving(true);
     try {
-      await userApi.changePassword(data);
+      await userApi.changePassword(userUuid, data);
       toast.success("Password updated successfully.");
       reset();
     } catch {
-      toast.error("Failed to update password. Please check your current password.");
+      toast.error("Failed to update password. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -71,59 +73,40 @@ export function SecurityForm() {
         </h3>
 
         <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-          {/* Current Password */}
-          <div className="space-y-2">
-            <Label htmlFor="current_password" className={FIELD_LABEL}>
-              Current Password
-            </Label>
-            <Input
-              id="current_password"
-              type="password"
-              placeholder="Enter current password"
-              className={FIELD_INPUT}
-              {...register("current_password")}
-            />
-            {errors.current_password && (
-              <p className="text-xs text-ds-error">
-                {errors.current_password.message}
-              </p>
-            )}
-          </div>
-
           {/* New Password */}
           <div className="space-y-2">
-            <Label htmlFor="new_password" className={FIELD_LABEL}>
+            <Label htmlFor="password" className={FIELD_LABEL}>
               New Password
             </Label>
             <Input
-              id="new_password"
+              id="password"
               type="password"
               placeholder="Enter new password"
               className={FIELD_INPUT}
-              {...register("new_password")}
+              {...register("password")}
             />
-            {errors.new_password && (
+            {errors.password && (
               <p className="text-xs text-ds-error">
-                {errors.new_password.message}
+                {errors.password.message}
               </p>
             )}
           </div>
 
           {/* Confirm New Password */}
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="new_password_confirmation" className={FIELD_LABEL}>
+          <div className="space-y-2">
+            <Label htmlFor="password_confirmation" className={FIELD_LABEL}>
               Confirm New Password
             </Label>
             <Input
-              id="new_password_confirmation"
+              id="password_confirmation"
               type="password"
               placeholder="Re-enter new password"
               className={FIELD_INPUT}
-              {...register("new_password_confirmation")}
+              {...register("password_confirmation")}
             />
-            {errors.new_password_confirmation && (
+            {errors.password_confirmation && (
               <p className="text-xs text-ds-error">
-                {errors.new_password_confirmation.message}
+                {errors.password_confirmation.message}
               </p>
             )}
           </div>
