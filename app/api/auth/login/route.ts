@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { AUTH_COOKIE_NAME, USER_UUID_COOKIE_NAME } from "@/lib/constants";
+import { AUTH_COOKIE_NAME, USER_UUID_COOKIE_NAME, PERMISSIONS_COOKIE_NAME } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   const { email, password, keepLoggedIn } = await request.json();
@@ -37,6 +37,24 @@ export async function POST(request: NextRequest) {
   });
 
   cookieStore.set(USER_UUID_COOKIE_NAME, userUuid, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    ...(keepLoggedIn ? { maxAge: 30 * 24 * 60 * 60 } : {}),
+  });
+
+  // Extract and store permission codes from all roles
+  const permissions = [
+    ...new Set(
+      (data.data.user.roles ?? []).flatMap(
+        (role: { permissions: { code: string }[] }) =>
+          role.permissions.map((p: { code: string }) => p.code)
+      )
+    ),
+  ];
+
+  cookieStore.set(PERMISSIONS_COOKIE_NAME, JSON.stringify(permissions), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

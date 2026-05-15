@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { AUTH_COOKIE_NAME, USER_UUID_COOKIE_NAME } from "@/lib/constants";
+import { AUTH_COOKIE_NAME, USER_UUID_COOKIE_NAME, PERMISSIONS_COOKIE_NAME } from "@/lib/constants";
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -11,6 +11,17 @@ export async function GET() {
       { authenticated: false },
       { status: 401 }
     );
+  }
+
+  // Read permissions from cookie
+  const permsCookie = cookieStore.get(PERMISSIONS_COOKIE_NAME)?.value;
+  let permissions: string[] = [];
+  if (permsCookie) {
+    try {
+      permissions = JSON.parse(permsCookie);
+    } catch {
+      // Ignore malformed cookie
+    }
   }
 
   // Read user UUID from cookie and fetch full user data
@@ -35,6 +46,7 @@ export async function GET() {
         return NextResponse.json({
           authenticated: true,
           user: data.data,
+          permissions,
         });
       }
     } catch {
@@ -42,5 +54,5 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ authenticated: true });
+  return NextResponse.json({ authenticated: true, permissions });
 }

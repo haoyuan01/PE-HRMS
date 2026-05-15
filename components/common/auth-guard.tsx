@@ -28,6 +28,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           } else {
             useAuthStore.setState({ isAuthenticated: true });
           }
+          if (session.permissions) {
+            useAuthStore.getState().setPermissions(session.permissions);
+          }
         } else {
           clearAuth();
           router.replace(ROUTES.LOGIN);

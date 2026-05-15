@@ -50,13 +50,16 @@ export interface LoginResponse {
 export interface SessionResponse {
   authenticated: boolean;
   user?: User;
+  permissions?: string[];
 }
 
 export interface AuthState {
   user: User | null;
+  permissions: string[];
   isAuthenticated: boolean;
   hasHydrated: boolean;
   setUser: (user: User) => void;
+  setPermissions: (permissions: string[]) => void;
   clearAuth: () => void;
   setHasHydrated: (state: boolean) => void;
 }
