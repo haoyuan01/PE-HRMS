@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AccountAvatar } from "@/components/modules/account/account-avatar";
 import { userApi } from "@/lib/api/user";
+import { lookupApi, type LookupItem } from "@/lib/api/lookup";
 import type { UserProfile } from "@/types/user";
 
 const FIELD_INPUT =
@@ -17,6 +18,9 @@ const FIELD_INPUT =
 
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
+
+const FIELD_SELECT =
+  "border-0 bg-surface-container-low px-4 py-1.5 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all h-8 w-full min-w-0 rounded-lg pr-10 text-base appearance-none md:text-sm";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -27,6 +31,7 @@ const profileSchema = z.object({
   identity_number: z.string(),
   passport_number: z.string(),
   blood_type: z.string(),
+  gender: z.string(),
   phone_number: z.string(),
   company_email: z.string(),
   address_1: z.string(),
@@ -36,6 +41,10 @@ const profileSchema = z.object({
   state: z.string(),
   postcode: z.string(),
   country: z.string(),
+  department: z.string(),
+  office_branch: z.string(),
+  position: z.string(),
+  joined_date: z.string(),
   emergency_name: z.string(),
   emergency_phone: z.string(),
   emergency_relationship: z.string(),
@@ -53,6 +62,15 @@ export function PersonalInformationForm({
   onSaved,
 }: PersonalInformationFormProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [departments, setDepartments] = useState<LookupItem[]>([]);
+  const [offices, setOffices] = useState<LookupItem[]>([]);
+  const [positions, setPositions] = useState<LookupItem[]>([]);
+
+  useEffect(() => {
+    lookupApi.getDepartments().then(setDepartments).catch(() => {});
+    lookupApi.getOffices().then(setOffices).catch(() => {});
+    lookupApi.getPositions().then(setPositions).catch(() => {});
+  }, []);
   const {
     register,
     handleSubmit,
@@ -67,6 +85,7 @@ export function PersonalInformationForm({
       identity_number: "",
       passport_number: "",
       blood_type: "",
+      gender: "",
       phone_number: "",
       company_email: "",
       address_1: "",
@@ -76,6 +95,10 @@ export function PersonalInformationForm({
       state: "",
       postcode: "",
       country: "",
+      department: "",
+      office_branch: "",
+      position: "",
+      joined_date: "",
       emergency_name: "",
       emergency_phone: "",
       emergency_relationship: "",
@@ -86,6 +109,7 @@ export function PersonalInformationForm({
     if (profile) {
       const personal = profile.personal;
       const contact = profile.contact;
+      const employment = profile.employment;
       const emergency = profile.emergency;
 
       reset({
@@ -95,6 +119,7 @@ export function PersonalInformationForm({
         identity_number: personal?.identity_number ?? "",
         passport_number: personal?.passport_number ?? "",
         blood_type: personal?.blood_type ?? "",
+        gender: personal?.gender === true ? "male" : personal?.gender === false ? "female" : "",
         phone_number: contact?.phone_number ?? "",
         company_email: contact?.company_email ?? "",
         address_1: contact?.address_1 ?? "",
@@ -104,12 +129,16 @@ export function PersonalInformationForm({
         state: contact?.state ?? "",
         postcode: contact?.postcode ?? "",
         country: contact?.country ?? "",
+        department: employment?.department?.uuid ?? "",
+        office_branch: employment?.office?.uuid ?? "",
+        position: employment?.position?.uuid ?? "",
+        joined_date: employment?.joined_date?.split("T")[0] ?? "",
         emergency_name: emergency?.name ?? "",
         emergency_phone: emergency?.phone_number ?? "",
         emergency_relationship: emergency?.relationship ?? "",
       });
     }
-  }, [profile, reset]);
+  }, [profile, departments, offices, positions, reset]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     if (!profile) return;
@@ -123,6 +152,7 @@ export function PersonalInformationForm({
           identity_number: data.identity_number || null,
           passport_number: data.passport_number || null,
           blood_type: data.blood_type || null,
+          gender: data.gender === "male" ? true : data.gender === "female" ? false : null,
         },
         contact: {
           phone_number: data.phone_number || null,
@@ -244,18 +274,40 @@ export function PersonalInformationForm({
               <Label htmlFor="blood_type" className={FIELD_LABEL}>
                 Blood Type
               </Label>
-              <select
-                id="blood_type"
-                className={`${FIELD_INPUT} w-full rounded-md`}
-                {...register("blood_type")}
-              >
-                <option value="">Select blood type</option>
-                {BLOOD_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  id="blood_type"
+                  className={FIELD_SELECT}
+                  {...register("blood_type")}
+                >
+                  <option value="" disabled hidden>Select blood type</option>
+                  {BLOOD_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+              </div>
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-2">
+              <Label htmlFor="gender" className={FIELD_LABEL}>
+                Gender
+              </Label>
+              <div className="relative">
+                <select
+                  id="gender"
+                  className={FIELD_SELECT}
+                  {...register("gender")}
+                >
+                  <option value="" disabled hidden>Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+              </div>
             </div>
           </div>
         </section>
@@ -394,45 +446,80 @@ export function PersonalInformationForm({
           <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
             {/* Department */}
             <div className="space-y-2">
-              <Label className={FIELD_LABEL}>Department</Label>
-              <Input
-                value={profile?.employment?.department?.name ?? "—"}
-                disabled
-                className={`${FIELD_INPUT} disabled:opacity-60`}
-              />
+              <Label htmlFor="department" className={FIELD_LABEL}>
+                Department
+              </Label>
+              <div className="relative">
+                <select
+                  id="department"
+                  className={FIELD_SELECT}
+                  {...register("department")}
+                >
+                  <option value="" disabled hidden>Select department</option>
+                  {departments.map((dept) => (
+                    <option key={dept.uuid} value={dept.uuid}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+              </div>
             </div>
 
             {/* Office Branch */}
             <div className="space-y-2">
-              <Label className={FIELD_LABEL}>Office Branch</Label>
-              <Input
-                value={profile?.employment?.office?.name ?? "—"}
-                disabled
-                className={`${FIELD_INPUT} disabled:opacity-60`}
-              />
+              <Label htmlFor="office_branch" className={FIELD_LABEL}>
+                Office Branch
+              </Label>
+              <div className="relative">
+                <select
+                  id="office_branch"
+                  className={FIELD_SELECT}
+                  {...register("office_branch")}
+                >
+                  <option value="" disabled hidden>Select office branch</option>
+                  {offices.map((office) => (
+                    <option key={office.uuid} value={office.uuid}>
+                      {office.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+              </div>
             </div>
 
             {/* Position */}
             <div className="space-y-2">
-              <Label className={FIELD_LABEL}>Position</Label>
-              <Input
-                value={profile?.employment?.position?.name ?? "—"}
-                disabled
-                className={`${FIELD_INPUT} disabled:opacity-60`}
-              />
+              <Label htmlFor="position" className={FIELD_LABEL}>
+                Position
+              </Label>
+              <div className="relative">
+                <select
+                  id="position"
+                  className={FIELD_SELECT}
+                  {...register("position")}
+                >
+                  <option value="" disabled hidden>Select position</option>
+                  {positions.map((pos) => (
+                    <option key={pos.uuid} value={pos.uuid}>
+                      {pos.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+              </div>
             </div>
 
             {/* Joined Date */}
             <div className="space-y-2">
-              <Label className={FIELD_LABEL}>Date of Joined</Label>
+              <Label htmlFor="joined_date" className={FIELD_LABEL}>
+                Date of Joined
+              </Label>
               <Input
-                value={
-                  profile?.employment?.joined_date
-                    ? new Date(profile.employment.joined_date).toLocaleDateString()
-                    : "—"
-                }
-                disabled
-                className={`${FIELD_INPUT} disabled:opacity-60`}
+                id="joined_date"
+                type="date"
+                className={FIELD_INPUT}
+                {...register("joined_date")}
               />
             </div>
           </div>

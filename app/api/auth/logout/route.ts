@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { AUTH_COOKIE_NAME } from "@/lib/constants";
+import { AUTH_COOKIE_NAME, USER_UUID_COOKIE_NAME } from "@/lib/constants";
 
 export async function POST() {
   const cookieStore = await cookies();
@@ -22,8 +22,16 @@ export async function POST() {
     }
   }
 
-  // Clear the HttpOnly cookie
+  // Clear the HttpOnly cookies
   cookieStore.set(AUTH_COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+
+  cookieStore.set(USER_UUID_COOKIE_NAME, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { AUTH_COOKIE_NAME } from "@/lib/constants";
+import { AUTH_COOKIE_NAME, USER_UUID_COOKIE_NAME } from "@/lib/constants";
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -13,12 +13,11 @@ export async function GET() {
     );
   }
 
-  // Decode JWT payload to extract user UUID, then fetch full user data
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const uuid = payload.sub;
+  // Read user UUID from cookie and fetch full user data
+  const uuid = cookieStore.get(USER_UUID_COOKIE_NAME)?.value;
 
-    if (uuid) {
+  if (uuid) {
+    try {
       const apiRes = await fetch(
         `${process.env.API_BASE_URL}/api/v1/users/${uuid}`,
         {
@@ -38,9 +37,9 @@ export async function GET() {
           user: data.data,
         });
       }
+    } catch {
+      // If user fetch fails, fall back to authenticated-only
     }
-  } catch {
-    // If JWT decode or user fetch fails, fall back to authenticated-only
   }
 
   return NextResponse.json({ authenticated: true });
