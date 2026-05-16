@@ -100,3 +100,19 @@ export interface ChangePasswordRequest {
   password: string;
   password_confirmation: string;
 }
+
+export interface Pagination {
+  current_page: number;
+  last_page: number;
+  prev_page_url: string | null;
+  next_page_url: string | null;
+  per_page: number;
+  total: number;
+  count: number;
+}
+
+export interface UserListResponse {
+  success: boolean;
+  data: UserProfile[];
+  pagination: Pagination;
+}
