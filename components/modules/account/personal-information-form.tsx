@@ -25,6 +25,7 @@ const FIELD_SELECT =
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 const profileSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
   full_name: z.string().min(1, "Full name is required"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
@@ -79,6 +80,7 @@ export function PersonalInformationForm({
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      email: "",
       full_name: "",
       first_name: "",
       last_name: "",
@@ -113,6 +115,7 @@ export function PersonalInformationForm({
       const emergency = profile.emergency;
 
       reset({
+        email: profile.email ?? "",
         full_name: personal?.full_name ?? "",
         first_name: personal?.first_name ?? "",
         last_name: personal?.last_name ?? "",
@@ -145,7 +148,7 @@ export function PersonalInformationForm({
     setIsSaving(true);
     try {
       await userApi.updateProfile(profile.uuid, {
-        email: profile.email,
+        email: data.email,
         role_uuid: profile.roles?.[0]?.uuid ?? undefined,
         personal: {
           full_name: data.full_name,
@@ -205,6 +208,25 @@ export function PersonalInformationForm({
             Basic Information
           </h3>
           <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+            {/* Email */}
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="email" className={FIELD_LABEL}>
+                Email *
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                className={FIELD_INPUT}
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-xs text-ds-error">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
             {/* Full Name */}
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="full_name" className={FIELD_LABEL}>
