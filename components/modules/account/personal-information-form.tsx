@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AccountAvatar } from "@/components/modules/account/account-avatar";
 import { userApi } from "@/lib/api/user";
 import { lookupApi, type LookupItem } from "@/lib/api/lookup";
@@ -19,8 +26,8 @@ const FIELD_INPUT =
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
 
-const FIELD_SELECT =
-  "border-0 bg-surface-container-low px-4 py-1.5 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all h-8 w-full min-w-0 rounded-lg pr-10 text-base appearance-none md:text-sm";
+const FIELD_TRIGGER =
+  "border-0 bg-surface-container-low px-4 py-3 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all w-full rounded-lg text-base md:text-sm h-auto";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -76,6 +83,7 @@ export function PersonalInformationForm({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -294,43 +302,45 @@ export function PersonalInformationForm({
 
             {/* Blood Type */}
             <div className="space-y-2">
-              <Label htmlFor="blood_type" className={FIELD_LABEL}>
-                Blood Type
-              </Label>
-              <div className="relative">
-                <select
-                  id="blood_type"
-                  className={FIELD_SELECT}
-                  {...register("blood_type")}
-                >
-                  <option value="" disabled hidden>Select blood type</option>
-                  {BLOOD_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-              </div>
+              <Label className={FIELD_LABEL}>Blood Type</Label>
+              <Controller
+                name="blood_type"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className={FIELD_TRIGGER}>
+                      <SelectValue placeholder="Select blood type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BLOOD_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             {/* Gender */}
             <div className="space-y-2">
-              <Label htmlFor="gender" className={FIELD_LABEL}>
-                Gender
-              </Label>
-              <div className="relative">
-                <select
-                  id="gender"
-                  className={FIELD_SELECT}
-                  {...register("gender")}
-                >
-                  <option value="" disabled hidden>Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-              </div>
+              <Label className={FIELD_LABEL}>Gender</Label>
+              <Controller
+                name="gender"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className={FIELD_TRIGGER}>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
         </section>
@@ -469,68 +479,71 @@ export function PersonalInformationForm({
           <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
             {/* Department */}
             <div className="space-y-2">
-              <Label htmlFor="department" className={FIELD_LABEL}>
-                Department
-              </Label>
-              <div className="relative">
-                <select
-                  id="department"
-                  className={FIELD_SELECT}
-                  {...register("department")}
-                >
-                  <option value="" disabled hidden>Select department</option>
-                  {departments.map((dept) => (
-                    <option key={dept.uuid} value={dept.uuid}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-              </div>
+              <Label className={FIELD_LABEL}>Department</Label>
+              <Controller
+                name="department"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className={FIELD_TRIGGER}>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.uuid} value={dept.uuid}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             {/* Office Branch */}
             <div className="space-y-2">
-              <Label htmlFor="office_branch" className={FIELD_LABEL}>
-                Office Branch
-              </Label>
-              <div className="relative">
-                <select
-                  id="office_branch"
-                  className={FIELD_SELECT}
-                  {...register("office_branch")}
-                >
-                  <option value="" disabled hidden>Select office branch</option>
-                  {offices.map((office) => (
-                    <option key={office.uuid} value={office.uuid}>
-                      {office.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-              </div>
+              <Label className={FIELD_LABEL}>Office Branch</Label>
+              <Controller
+                name="office_branch"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className={FIELD_TRIGGER}>
+                      <SelectValue placeholder="Select office branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {offices.map((office) => (
+                        <SelectItem key={office.uuid} value={office.uuid}>
+                          {office.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             {/* Position */}
             <div className="space-y-2">
-              <Label htmlFor="position" className={FIELD_LABEL}>
-                Position
-              </Label>
-              <div className="relative">
-                <select
-                  id="position"
-                  className={FIELD_SELECT}
-                  {...register("position")}
-                >
-                  <option value="" disabled hidden>Select position</option>
-                  {positions.map((pos) => (
-                    <option key={pos.uuid} value={pos.uuid}>
-                      {pos.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-              </div>
+              <Label className={FIELD_LABEL}>Position</Label>
+              <Controller
+                name="position"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className={FIELD_TRIGGER}>
+                      <SelectValue placeholder="Select position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {positions.map((pos) => (
+                        <SelectItem key={pos.uuid} value={pos.uuid}>
+                          {pos.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             {/* Joined Date */}

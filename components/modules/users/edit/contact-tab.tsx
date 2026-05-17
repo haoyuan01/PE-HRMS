@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { userApi } from "@/lib/api/user";
 import type { UserProfile } from "@/types/user";
 
@@ -17,8 +23,17 @@ const FIELD_INPUT =
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
 
-const FIELD_SELECT =
-  "border-0 bg-surface-container-low px-4 py-1.5 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all h-8 w-full min-w-0 rounded-lg pr-10 text-base appearance-none md:text-sm";
+const FIELD_TRIGGER =
+  "border-0 bg-surface-container-low px-4 py-3 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all w-full rounded-lg text-base md:text-sm h-auto";
+
+const COUNTRIES = [
+  "Malaysia",
+  "Singapore",
+  "Indonesia",
+  "Brunei",
+  "Thailand",
+  "Philippines",
+];
 
 const schema = z.object({
   phone_number: z.string(),
@@ -43,7 +58,7 @@ interface ContactTabProps {
 export function ContactTab({ profile, onSaved }: ContactTabProps) {
   const contact = profile.contact;
 
-  const { register, handleSubmit, reset } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       phone_number: "",
@@ -219,21 +234,25 @@ export function ContactTab({ profile, onSaved }: ContactTabProps) {
 
       {/* Country */}
       <div className="space-y-2">
-        <Label htmlFor="country" className={FIELD_LABEL}>
-          Country
-        </Label>
-        <div className="relative">
-          <select id="country" className={FIELD_SELECT} {...register("country")}>
-            <option value="" disabled hidden>Select Country</option>
-            <option value="Malaysia">Malaysia</option>
-            <option value="Singapore">Singapore</option>
-            <option value="Indonesia">Indonesia</option>
-            <option value="Brunei">Brunei</option>
-            <option value="Thailand">Thailand</option>
-            <option value="Philippines">Philippines</option>
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-        </div>
+        <Label className={FIELD_LABEL}>Country</Label>
+        <Controller
+          name="country"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className={FIELD_TRIGGER}>
+                <SelectValue placeholder="Select Country" />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRIES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
     </form>
   );

@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { userApi } from "@/lib/api/user";
 import type { UserProfile } from "@/types/user";
 
@@ -17,8 +23,8 @@ const FIELD_INPUT =
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
 
-const FIELD_SELECT =
-  "border-0 bg-surface-container-low px-4 py-1.5 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all h-8 w-full min-w-0 rounded-lg pr-10 text-base appearance-none md:text-sm";
+const FIELD_TRIGGER =
+  "border-0 bg-surface-container-low px-4 py-3 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all w-full rounded-lg text-base md:text-sm h-auto";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -49,6 +55,7 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -178,32 +185,42 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
 
         {/* Gender */}
         <div className="space-y-2">
-          <Label htmlFor="gender" className={FIELD_LABEL}>
-            Gender
-          </Label>
-          <div className="relative">
-            <select id="gender" className={FIELD_SELECT} {...register("gender")}>
-              <option value="" disabled hidden>Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-          </div>
+          <Label className={FIELD_LABEL}>Gender</Label>
+          <Controller
+            name="gender"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className={FIELD_TRIGGER}>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         {/* Marital Status */}
         <div className="space-y-2">
-          <Label htmlFor="is_married" className={FIELD_LABEL}>
-            Marital Status
-          </Label>
-          <div className="relative">
-            <select id="is_married" className={FIELD_SELECT} {...register("is_married")}>
-              <option value="" disabled hidden>Select status</option>
-              <option value="single">Single</option>
-              <option value="married">Married</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-          </div>
+          <Label className={FIELD_LABEL}>Marital Status</Label>
+          <Controller
+            name="is_married"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className={FIELD_TRIGGER}>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">Single</SelectItem>
+                  <SelectItem value="married">Married</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         {/* Identity No */}
@@ -247,20 +264,25 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
 
         {/* Blood Type */}
         <div className="space-y-2">
-          <Label htmlFor="blood_type" className={FIELD_LABEL}>
-            Blood Type
-          </Label>
-          <div className="relative">
-            <select id="blood_type" className={FIELD_SELECT} {...register("blood_type")}>
-              <option value="" disabled hidden>Select Blood Type</option>
-              {BLOOD_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-          </div>
+          <Label className={FIELD_LABEL}>Blood Type</Label>
+          <Controller
+            name="blood_type"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className={FIELD_TRIGGER}>
+                  <SelectValue placeholder="Select Blood Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BLOOD_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
       </div>
     </form>

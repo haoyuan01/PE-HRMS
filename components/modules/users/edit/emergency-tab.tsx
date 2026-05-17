@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { userApi } from "@/lib/api/user";
 import type { UserProfile } from "@/types/user";
 
@@ -17,8 +23,8 @@ const FIELD_INPUT =
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
 
-const FIELD_SELECT =
-  "border-0 bg-surface-container-low px-4 py-1.5 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all h-8 w-full min-w-0 rounded-lg pr-10 text-base appearance-none md:text-sm";
+const FIELD_TRIGGER =
+  "border-0 bg-surface-container-low px-4 py-3 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all w-full rounded-lg text-base md:text-sm h-auto";
 
 const RELATIONSHIPS = [
   "Father",
@@ -48,7 +54,7 @@ interface EmergencyTabProps {
 export function EmergencyTab({ profile, onSaved }: EmergencyTabProps) {
   const emergency = profile.emergency;
 
-  const { register, handleSubmit, reset } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
@@ -111,24 +117,25 @@ export function EmergencyTab({ profile, onSaved }: EmergencyTabProps) {
 
       {/* Relationship */}
       <div className="space-y-2">
-        <Label htmlFor="emergency_relationship" className={FIELD_LABEL}>
-          Relationship
-        </Label>
-        <div className="relative">
-          <select
-            id="emergency_relationship"
-            className={FIELD_SELECT}
-            {...register("relationship")}
-          >
-            <option value="" disabled hidden>Select Relationship</option>
-            {RELATIONSHIPS.map((rel) => (
-              <option key={rel} value={rel}>
-                {rel}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-        </div>
+        <Label className={FIELD_LABEL}>Relationship</Label>
+        <Controller
+          name="relationship"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className={FIELD_TRIGGER}>
+                <SelectValue placeholder="Select Relationship" />
+              </SelectTrigger>
+              <SelectContent>
+                {RELATIONSHIPS.map((rel) => (
+                  <SelectItem key={rel} value={rel}>
+                    {rel}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
     </form>
   );

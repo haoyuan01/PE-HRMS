@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { X } from "lucide-react";
 import { lookupApi, type LookupItem } from "@/lib/api/lookup";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const FIELD_SELECT =
-  "border-0 bg-surface-container-low px-4 py-1.5 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all h-8 w-full min-w-0 rounded-lg pr-10 text-base appearance-none md:text-sm";
+const FIELD_TRIGGER =
+  "border-0 bg-surface-container-low px-4 py-3 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all w-full rounded-lg text-base md:text-sm h-auto";
 
 export interface UserFilters {
   department: string;
@@ -82,21 +89,19 @@ export function UserFilterModal({
             <label className="text-sm font-medium text-on-surface-variant">
               Department
             </label>
-            <div className="relative">
-              <select
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className={FIELD_SELECT}
-              >
-                <option value="">All Departments</option>
+            <Select value={department} onValueChange={(v) => setDepartment(v ?? "")}>
+              <SelectTrigger className={FIELD_TRIGGER}>
+                <SelectValue placeholder="All Departments" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Departments</SelectItem>
                 {departments.map((d) => (
-                  <option key={d.uuid} value={d.uuid}>
+                  <SelectItem key={d.uuid} value={d.uuid}>
                     {d.name}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-            </div>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Position */}
@@ -104,21 +109,19 @@ export function UserFilterModal({
             <label className="text-sm font-medium text-on-surface-variant">
               Position
             </label>
-            <div className="relative">
-              <select
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                className={FIELD_SELECT}
-              >
-                <option value="">All Positions</option>
+            <Select value={position} onValueChange={(v) => setPosition(v ?? "")}>
+              <SelectTrigger className={FIELD_TRIGGER}>
+                <SelectValue placeholder="All Positions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Positions</SelectItem>
                 {positions.map((p) => (
-                  <option key={p.uuid} value={p.uuid}>
+                  <SelectItem key={p.uuid} value={p.uuid}>
                     {p.name}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-            </div>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
