@@ -28,6 +28,8 @@ export default function UserManagementPage() {
     () => ({
       page,
       per_page: 15,
+      sortBy: "created_at",
+      orderBy: "desc",
       ...(search ? { name: search } : {}),
       ...(filters.department ? { department: filters.department } : {}),
       ...(filters.position ? { position: filters.position } : {}),
@@ -99,7 +101,10 @@ export default function UserManagementPage() {
           )}
 
           {/* Add User */}
-          <button className="flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90">
+          <button
+            onClick={() => router.push("/dashboard/users/add")}
+            className="flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+          >
             <Plus className="h-4 w-4" />
             Add User
           </button>

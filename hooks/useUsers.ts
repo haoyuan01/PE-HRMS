@@ -10,6 +10,8 @@ interface UseUsersParams {
   name?: string;
   department?: string;
   position?: string;
+  sortBy?: string;
+  orderBy?: string;
 }
 
 export function useUsers(params: UseUsersParams = {}) {
@@ -30,7 +32,7 @@ export function useUsers(params: UseUsersParams = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [params.page, params.per_page, params.name, params.department, params.position]);
+  }, [params.page, params.per_page, params.name, params.department, params.position, params.sortBy, params.orderBy]);
 
   useEffect(() => {
     fetch();

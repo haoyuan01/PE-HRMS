@@ -18,7 +18,7 @@ const FIELD_LABEL =
 
 const changePasswordSchema = z
   .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
     password_confirmation: z.string().min(1, "Please confirm your new password"),
   })
   .refine((data) => data.password === data.password_confirmation, {
