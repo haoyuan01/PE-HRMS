@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Search, SlidersHorizontal, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -12,6 +13,7 @@ import { UserFilterModal, type UserFilters } from "@/components/modules/users/us
 import { UserDeleteModal } from "@/components/modules/users/user-delete-modal";
 
 export default function UserManagementPage() {
+  const router = useRouter();
   const currentUserUuid = useAuthStore((s) => s.user?.uuid);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -119,6 +121,7 @@ export default function UserManagementPage() {
             <UserTable
               users={filteredUsers}
               isLoading={isLoading}
+              onEdit={(uuid) => router.push(`/dashboard/users/${uuid}/edit`)}
               onDelete={(uuid) => setDeleteUserUuid(uuid)}
             />
             {pagination && pagination.total > 0 && (

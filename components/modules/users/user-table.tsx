@@ -91,17 +91,18 @@ const columns: ColumnDef<UserProfile>[] = [
     id: "actions",
     header: "Actions",
     cell: ({ row, table }) => {
-      const onDelete = (table.options.meta as { onDelete?: (uuid: string) => void })?.onDelete;
+      const meta = table.options.meta as { onDelete?: (uuid: string) => void; onEdit?: (uuid: string) => void };
       return (
         <div className="flex items-center gap-2">
           <button
+            onClick={() => meta.onEdit?.(row.original.uuid)}
             className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
             title="Edit user"
           >
             <Pencil className="h-4 w-4" />
           </button>
           <button
-            onClick={() => onDelete?.(row.original.uuid)}
+            onClick={() => meta.onDelete?.(row.original.uuid)}
             className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
             title="Delete user"
           >
@@ -116,16 +117,17 @@ const columns: ColumnDef<UserProfile>[] = [
 interface UserTableProps {
   users: UserProfile[];
   isLoading: boolean;
+  onEdit?: (uuid: string) => void;
   onDelete?: (uuid: string) => void;
 }
 
-export function UserTable({ users, isLoading, onDelete }: UserTableProps) {
+export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps) {
   const table = useReactTable({
     data: users,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.uuid,
-    meta: { onDelete },
+    meta: { onEdit, onDelete },
   });
 
   if (isLoading) {
