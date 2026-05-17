@@ -23,10 +23,17 @@ async function proxyRequest(
   }
 
   // Forward body for non-GET requests
-  let body: string | undefined;
+  let body: BodyInit | undefined;
   if (request.method !== "GET" && request.method !== "HEAD") {
-    headers["Content-Type"] = "application/json";
-    body = await request.text();
+    const contentType = request.headers.get("content-type") ?? "";
+    if (contentType.includes("multipart/form-data")) {
+      // Forward FormData as-is — let fetch set the boundary header
+      body = await request.arrayBuffer();
+      headers["Content-Type"] = contentType;
+    } else {
+      headers["Content-Type"] = "application/json";
+      body = await request.text();
+    }
   }
 
   const apiRes = await fetch(

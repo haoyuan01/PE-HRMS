@@ -91,7 +91,11 @@ export interface UserProfileResponse {
 }
 
 export interface UpdateProfileRequest {
-  personal?: Partial<Pick<Personal, "full_name" | "first_name" | "last_name" | "identity_number" | "passport_number" | "passport_expiry_date" | "blood_type" | "gender" | "is_married">>;
+  email?: string;
+  role_uuid?: string;
+  personal?: Partial<Pick<Personal, "full_name" | "first_name" | "last_name" | "identity_number" | "passport_number" | "passport_expiry_date" | "blood_type" | "gender" | "is_married">> & {
+    image?: File;
+  };
   contact?: Partial<Pick<Contact, "company_email" | "phone_number" | "address_1" | "address_2" | "address_3" | "city" | "state" | "postcode" | "country">>;
   emergency?: Partial<Pick<Emergency, "name" | "phone_number" | "relationship">>;
 }

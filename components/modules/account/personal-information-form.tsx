@@ -145,6 +145,8 @@ export function PersonalInformationForm({
     setIsSaving(true);
     try {
       await userApi.updateProfile(profile.uuid, {
+        email: profile.email,
+        role_uuid: profile.roles?.[0]?.uuid ?? undefined,
         personal: {
           full_name: data.full_name,
           first_name: data.first_name,
@@ -153,10 +155,11 @@ export function PersonalInformationForm({
           passport_number: data.passport_number || null,
           blood_type: data.blood_type || null,
           gender: data.gender === "male" ? true : data.gender === "female" ? false : null,
+          is_married: null,
         },
         contact: {
-          phone_number: data.phone_number || null,
           company_email: data.company_email || null,
+          phone_number: data.phone_number || null,
           address_1: data.address_1 || null,
           address_2: data.address_2 || null,
           address_3: data.address_3 || null,
