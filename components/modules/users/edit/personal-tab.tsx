@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
+import { Camera, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +49,9 @@ interface PersonalTabProps {
 }
 
 export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const personal = profile.personal;
 
   const {
@@ -101,6 +104,7 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
         blood_type: data.blood_type || null,
         gender: data.gender === "male" ? true : data.gender === "female" ? false : null,
         is_married: data.is_married === "married" ? true : data.is_married === "single" ? false : null,
+        image: imageFile || undefined,
       });
       toast.success("Personal information updated successfully.");
       onSaved();
@@ -117,20 +121,48 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
     <form id="form-personal" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {/* Profile Photo */}
       <div className="flex flex-col items-center gap-3">
-        <div className="relative h-20 w-20 overflow-hidden rounded-full bg-surface-container-high">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="flex h-full w-full items-center justify-center text-xl font-medium text-on-surface-variant">
-              {initials}
-            </span>
-          )}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="group relative h-20 w-20 cursor-pointer overflow-hidden rounded-full bg-surface-container-high transition-all hover:ring-2 hover:ring-ds-primary/40"
+          >
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center text-xl font-medium text-on-surface-variant">
+                {initials}
+              </span>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/40">
+              <Camera className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
+          </button>
+          <span
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-surface-container-lowest bg-ds-primary text-on-primary shadow-sm transition-opacity hover:opacity-90"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </span>
         </div>
-        <p className="text-sm text-on-surface-variant">Profile Photo</p>
+        <p className="text-xs text-on-surface-variant">JPG or PNG. Max size of 800K</p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              setImageFile(file);
+              setImageUrl(URL.createObjectURL(file));
+            }
+          }}
+        />
       </div>
 
       {/* Form Fields */}

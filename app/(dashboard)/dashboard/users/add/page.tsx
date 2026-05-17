@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ArrowLeft, Loader2, UserCircle } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, Pencil, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,8 +86,11 @@ type FormValues = z.infer<typeof schema>;
 
 export default function AddUserPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingLookups, setIsLoadingLookups] = useState(true);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [roles, setRoles] = useState<LookupItem[]>([]);
   const [departments, setDepartments] = useState<LookupItem[]>([]);
   const [offices, setOffices] = useState<LookupItem[]>([]);
@@ -158,6 +161,7 @@ export default function AddUserPage() {
           blood_type: data.blood_type || undefined,
           gender: data.gender === "male" ? true : data.gender === "female" ? false : undefined,
           is_married: data.is_married === "married" ? true : data.is_married === "single" ? false : undefined,
+          image: imageFile || undefined,
         },
         contact: {
           company_email: data.company_email || undefined,
@@ -221,19 +225,52 @@ export default function AddUserPage() {
         <div className="rounded-2xl bg-surface-container-lowest p-8 shadow-[var(--shadow-ambient)]">
           {/* Profile Photo */}
           <div className="flex items-center gap-5">
-            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-container-low">
-              <UserCircle className="h-12 w-12 text-on-surface-variant/40" />
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="group relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-surface-container-low transition-all hover:ring-2 hover:ring-ds-primary/40"
+              >
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                ) : (
+                  <UserCircle className="h-12 w-12 text-on-surface-variant/40" />
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/40">
+                  <Camera className="h-5 w-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                </div>
+              </button>
+              <span
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-surface-container-lowest bg-ds-primary text-on-primary shadow-sm transition-opacity hover:opacity-90"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </span>
             </div>
             <div>
               <button
                 type="button"
-                className="text-sm font-medium text-ds-primary hover:text-ds-primary-dim transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface"
               >
-                Upload Photo
+                {imagePreview ? "Change Photo" : "Upload Photo"}
               </button>
-              <p className="mt-1 text-xs text-on-surface-variant">
+              <p className="mt-1.5 text-xs text-on-surface-variant">
                 JPG, GIF or PNG. Max size of 800K
               </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+              />
             </div>
           </div>
 
