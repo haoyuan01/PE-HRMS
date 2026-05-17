@@ -111,7 +111,11 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
           name="position"
           control={control}
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select
+              value={field.value}
+              onValueChange={field.onChange}
+              items={positions.map((p) => ({ value: p.uuid, label: p.name }))}
+            >
               <SelectTrigger className={FIELD_TRIGGER}>
                 <SelectValue placeholder="Select position" />
               </SelectTrigger>
@@ -134,7 +138,11 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
           name="office_branch"
           control={control}
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select
+              value={field.value}
+              onValueChange={field.onChange}
+              items={offices.map((o) => ({ value: o.uuid, label: o.name }))}
+            >
               <SelectTrigger className={FIELD_TRIGGER}>
                 <SelectValue placeholder="Select Branch" />
               </SelectTrigger>
@@ -157,7 +165,11 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
           name="department"
           control={control}
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select
+              value={field.value}
+              onValueChange={field.onChange}
+              items={departments.map((d) => ({ value: d.uuid, label: d.name }))}
+            >
               <SelectTrigger className={FIELD_TRIGGER}>
                 <SelectValue placeholder="Select Department" />
               </SelectTrigger>

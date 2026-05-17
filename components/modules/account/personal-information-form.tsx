@@ -156,7 +156,7 @@ export function PersonalInformationForm({
     if (!profile) return;
     setIsSaving(true);
     try {
-      await Promise.all([
+      const results = await Promise.allSettled([
         userApi.updatePersonal(profile.uuid, {
           full_name: data.full_name,
           first_name: data.first_name,
@@ -179,13 +179,25 @@ export function PersonalInformationForm({
           postcode: data.postcode || null,
           country: data.country || null,
         }),
+        userApi.updateEmployment(profile.uuid, {
+          department_uuid: data.department || null,
+          office_uuid: data.office_branch || null,
+          position_uuid: data.position || null,
+          joined_date: data.joined_date || null,
+        }),
         userApi.updateEmergency(profile.uuid, {
           name: data.emergency_name || null,
           phone_number: data.emergency_phone || null,
           relationship: data.emergency_relationship || null,
         }),
       ]);
-      toast.success("Profile updated successfully.");
+
+      const failed = results.filter((r) => r.status === "rejected");
+      if (failed.length > 0) {
+        toast.error(`Failed to update ${failed.length} section(s).`);
+      } else {
+        toast.success("Profile updated successfully.");
+      }
       onSaved();
     } catch {
       toast.error("Failed to update profile. Please try again.");
@@ -487,7 +499,11 @@ export function PersonalInformationForm({
                 name="department"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    items={departments.map((d) => ({ value: d.uuid, label: d.name }))}
+                  >
                     <SelectTrigger className={FIELD_TRIGGER}>
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
@@ -510,7 +526,11 @@ export function PersonalInformationForm({
                 name="office_branch"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    items={offices.map((o) => ({ value: o.uuid, label: o.name }))}
+                  >
                     <SelectTrigger className={FIELD_TRIGGER}>
                       <SelectValue placeholder="Select office branch" />
                     </SelectTrigger>
@@ -533,7 +553,11 @@ export function PersonalInformationForm({
                 name="position"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    items={positions.map((p) => ({ value: p.uuid, label: p.name }))}
+                  >
                     <SelectTrigger className={FIELD_TRIGGER}>
                       <SelectValue placeholder="Select position" />
                     </SelectTrigger>

@@ -96,7 +96,7 @@ export function UserFilterModal({
               <SelectContent>
                 <SelectItem value="">All Departments</SelectItem>
                 {departments.map((d) => (
-                  <SelectItem key={d.uuid} value={d.uuid}>
+                  <SelectItem key={d.uuid} value={d.uuid} label={d.name}>
                     {d.name}
                   </SelectItem>
                 ))}
@@ -116,7 +116,7 @@ export function UserFilterModal({
               <SelectContent>
                 <SelectItem value="">All Positions</SelectItem>
                 {positions.map((p) => (
-                  <SelectItem key={p.uuid} value={p.uuid}>
+                  <SelectItem key={p.uuid} value={p.uuid} label={p.name}>
                     {p.name}
                   </SelectItem>
                 ))}

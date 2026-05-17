@@ -328,7 +328,7 @@ export default function AddUserPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {roles.map((role) => (
-                            <SelectItem key={role.uuid} value={role.uuid}>
+                            <SelectItem key={role.uuid} value={role.uuid} label={role.name.charAt(0).toUpperCase() + role.name.slice(1)}>
                               {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
                             </SelectItem>
                           ))}
@@ -652,7 +652,7 @@ export default function AddUserPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {departments.map((dept) => (
-                            <SelectItem key={dept.uuid} value={dept.uuid}>{dept.name}</SelectItem>
+                            <SelectItem key={dept.uuid} value={dept.uuid} label={dept.name}>{dept.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -673,7 +673,7 @@ export default function AddUserPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {offices.map((office) => (
-                            <SelectItem key={office.uuid} value={office.uuid}>{office.name}</SelectItem>
+                            <SelectItem key={office.uuid} value={office.uuid} label={office.name}>{office.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -694,7 +694,7 @@ export default function AddUserPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {positions.map((pos) => (
-                            <SelectItem key={pos.uuid} value={pos.uuid}>{pos.name}</SelectItem>
+                            <SelectItem key={pos.uuid} value={pos.uuid} label={pos.name}>{pos.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
