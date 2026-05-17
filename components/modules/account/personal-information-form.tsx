@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
@@ -70,6 +70,7 @@ export function PersonalInformationForm({
   onSaved,
 }: PersonalInformationFormProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const imageFileRef = useRef<File | null>(null);
   const [departments, setDepartments] = useState<LookupItem[]>([]);
   const [offices, setOffices] = useState<LookupItem[]>([]);
   const [positions, setPositions] = useState<LookupItem[]>([]);
@@ -165,6 +166,7 @@ export function PersonalInformationForm({
           blood_type: data.blood_type || null,
           gender: data.gender === "male" ? true : data.gender === "female" ? false : null,
           is_married: null,
+          image: imageFileRef.current || undefined,
         }),
         userApi.updateContact(profile.uuid, {
           company_email: data.company_email || null,
@@ -204,6 +206,7 @@ export function PersonalInformationForm({
           firstName={profile?.personal?.first_name ?? null}
           lastName={profile?.personal?.last_name ?? null}
           profilePhoto={profile?.personal?.image_path ?? null}
+          onImageChange={(file) => { imageFileRef.current = file; }}
         />
       </div>
 
