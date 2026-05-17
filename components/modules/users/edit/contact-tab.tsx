@@ -5,8 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { userApi } from "@/lib/api/user";
 import type { UserProfile } from "@/types/user";
 
 const FIELD_INPUT =
@@ -35,12 +37,13 @@ type FormValues = z.infer<typeof schema>;
 
 interface ContactTabProps {
   profile: UserProfile;
+  onSaved: () => void;
 }
 
-export function ContactTab({ profile }: ContactTabProps) {
+export function ContactTab({ profile, onSaved }: ContactTabProps) {
   const contact = profile.contact;
 
-  const { register, reset } = useForm<FormValues>({
+  const { register, handleSubmit, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       phone_number: "",
@@ -73,8 +76,28 @@ export function ContactTab({ profile }: ContactTabProps) {
     }
   }, [profile, contact, reset]);
 
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await userApi.updateContact(profile.uuid, {
+        company_email: data.company_email || null,
+        phone_number: data.phone_number || null,
+        address_1: data.address_1 || null,
+        address_2: data.address_2 || null,
+        address_3: data.address_3 || null,
+        city: data.city || null,
+        state: data.state || null,
+        postcode: data.postcode || null,
+        country: data.country || null,
+      });
+      toast.success("Contact information updated successfully.");
+      onSaved();
+    } catch {
+      toast.error("Failed to update contact information.");
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+    <form id="form-contact" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
       {/* Contact Number */}
       <div className="space-y-2">
         <Label htmlFor="phone_number" className={FIELD_LABEL}>
@@ -212,6 +235,6 @@ export function ContactTab({ profile }: ContactTabProps) {
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
         </div>
       </div>
-    </div>
+    </form>
   );
 }

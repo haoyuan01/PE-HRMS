@@ -5,8 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { userApi } from "@/lib/api/user";
 import type { UserProfile } from "@/types/user";
 
 const FIELD_INPUT =
@@ -40,12 +42,13 @@ type FormValues = z.infer<typeof schema>;
 
 interface EmergencyTabProps {
   profile: UserProfile;
+  onSaved: () => void;
 }
 
-export function EmergencyTab({ profile }: EmergencyTabProps) {
+export function EmergencyTab({ profile, onSaved }: EmergencyTabProps) {
   const emergency = profile.emergency;
 
-  const { register, reset } = useForm<FormValues>({
+  const { register, handleSubmit, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
@@ -64,8 +67,22 @@ export function EmergencyTab({ profile }: EmergencyTabProps) {
     }
   }, [profile, emergency, reset]);
 
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await userApi.updateEmergency(profile.uuid, {
+        name: data.name || null,
+        phone_number: data.phone_number || null,
+        relationship: data.relationship || null,
+      });
+      toast.success("Emergency contact updated successfully.");
+      onSaved();
+    } catch {
+      toast.error("Failed to update emergency contact.");
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+    <form id="form-emergency" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
       {/* Contact Name */}
       <div className="space-y-2">
         <Label htmlFor="emergency_name" className={FIELD_LABEL}>
@@ -113,6 +130,6 @@ export function EmergencyTab({ profile }: EmergencyTabProps) {
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
         </div>
       </div>
-    </div>
+    </form>
   );
 }

@@ -5,8 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { userApi } from "@/lib/api/user";
 import type { UserProfile } from "@/types/user";
 
 const FIELD_INPUT =
@@ -36,14 +38,16 @@ type FormValues = z.infer<typeof schema>;
 
 interface PersonalTabProps {
   profile: UserProfile;
+  onSaved: () => void;
 }
 
-export function PersonalTab({ profile }: PersonalTabProps) {
+export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const personal = profile.personal;
 
   const {
     register,
+    handleSubmit,
     reset,
     formState: { errors },
   } = useForm<FormValues>({
@@ -78,12 +82,32 @@ export function PersonalTab({ profile }: PersonalTabProps) {
     }
   }, [profile, personal, reset]);
 
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await userApi.updatePersonal(profile.uuid, {
+        full_name: data.full_name,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        identity_number: data.identity_number || null,
+        passport_number: data.passport_number || null,
+        passport_expiry_date: data.passport_expiry_date || null,
+        blood_type: data.blood_type || null,
+        gender: data.gender === "male" ? true : data.gender === "female" ? false : null,
+        is_married: data.is_married === "married" ? true : data.is_married === "single" ? false : null,
+      });
+      toast.success("Personal information updated successfully.");
+      onSaved();
+    } catch {
+      toast.error("Failed to update personal information.");
+    }
+  };
+
   const initials =
     (personal?.first_name?.[0] ?? "") + (personal?.last_name?.[0] ?? "") ||
     profile.email[0].toUpperCase();
 
   return (
-    <div className="space-y-8">
+    <form id="form-personal" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {/* Profile Photo */}
       <div className="flex flex-col items-center gap-3">
         <div className="relative h-20 w-20 overflow-hidden rounded-full bg-surface-container-high">
@@ -239,6 +263,6 @@ export function PersonalTab({ profile }: PersonalTabProps) {
           </div>
         </div>
       </div>
-    </div>
+    </form>
   );
 }

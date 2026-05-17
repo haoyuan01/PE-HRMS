@@ -97,6 +97,12 @@ export interface UpdateProfileRequest {
     image?: File;
   };
   contact?: Partial<Pick<Contact, "company_email" | "phone_number" | "address_1" | "address_2" | "address_3" | "city" | "state" | "postcode" | "country">>;
+  employment?: {
+    position_uuid?: string | null;
+    department_uuid?: string | null;
+    office_uuid?: string | null;
+    joined_date?: string | null;
+  };
   emergency?: Partial<Pick<Emergency, "name" | "phone_number" | "relationship">>;
 }
 

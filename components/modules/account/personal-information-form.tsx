@@ -147,10 +147,8 @@ export function PersonalInformationForm({
     if (!profile) return;
     setIsSaving(true);
     try {
-      await userApi.updateProfile(profile.uuid, {
-        email: data.email,
-        role_uuid: profile.roles?.[0]?.uuid ?? undefined,
-        personal: {
+      await Promise.all([
+        userApi.updatePersonal(profile.uuid, {
           full_name: data.full_name,
           first_name: data.first_name,
           last_name: data.last_name,
@@ -159,8 +157,8 @@ export function PersonalInformationForm({
           blood_type: data.blood_type || null,
           gender: data.gender === "male" ? true : data.gender === "female" ? false : null,
           is_married: null,
-        },
-        contact: {
+        }),
+        userApi.updateContact(profile.uuid, {
           company_email: data.company_email || null,
           phone_number: data.phone_number || null,
           address_1: data.address_1 || null,
@@ -170,13 +168,13 @@ export function PersonalInformationForm({
           state: data.state || null,
           postcode: data.postcode || null,
           country: data.country || null,
-        },
-        emergency: {
+        }),
+        userApi.updateEmergency(profile.uuid, {
           name: data.emergency_name || null,
           phone_number: data.emergency_phone || null,
           relationship: data.emergency_relationship || null,
-        },
-      });
+        }),
+      ]);
       toast.success("Profile updated successfully.");
       onSaved();
     } catch {

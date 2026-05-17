@@ -11,6 +11,7 @@ import { UserTable } from "@/components/modules/users/user-table";
 import { UserTablePagination } from "@/components/modules/users/user-table-pagination";
 import { UserFilterModal, type UserFilters } from "@/components/modules/users/user-filter-modal";
 import { UserDeleteModal } from "@/components/modules/users/user-delete-modal";
+import { UserReactivateModal } from "@/components/modules/users/user-reactivate-modal";
 
 export default function UserManagementPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function UserManagementPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<UserFilters>({ department: "", position: "" });
   const [deleteUserUuid, setDeleteUserUuid] = useState<string | null>(null);
+  const [reactivateUserUuid, setReactivateUserUuid] = useState<string | null>(null);
 
   const params = useMemo(
     () => ({
@@ -36,7 +38,7 @@ export default function UserManagementPage() {
   const { users, pagination, isLoading, error, refetch } = useUsers(params);
 
   const filteredUsers = useMemo(
-    () => users.filter((u) => u.uuid !== currentUserUuid && u.is_active),
+    () => users.filter((u) => u.uuid !== currentUserUuid),
     [users, currentUserUuid]
   );
 
@@ -123,6 +125,7 @@ export default function UserManagementPage() {
               isLoading={isLoading}
               onEdit={(uuid) => router.push(`/dashboard/users/${uuid}/edit`)}
               onDelete={(uuid) => setDeleteUserUuid(uuid)}
+              onReactivate={(uuid) => setReactivateUserUuid(uuid)}
             />
             {pagination && pagination.total > 0 && (
               <UserTablePagination
@@ -155,6 +158,19 @@ export default function UserManagementPage() {
           await userApi.deleteUser(deleteUserUuid);
           toast.success("User deleted successfully.");
           setDeleteUserUuid(null);
+          refetch();
+        }}
+      />
+
+      {/* Reactivate Confirmation Modal */}
+      <UserReactivateModal
+        open={reactivateUserUuid !== null}
+        onClose={() => setReactivateUserUuid(null)}
+        onConfirm={async () => {
+          if (!reactivateUserUuid) return;
+          await userApi.reactivateUser(reactivateUserUuid);
+          toast.success("User reactivated successfully.");
+          setReactivateUserUuid(null);
           refetch();
         }}
       />

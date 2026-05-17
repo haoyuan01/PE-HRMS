@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { userApi } from "@/lib/api/user";
 import { lookupApi, type LookupItem } from "@/lib/api/lookup";
 import type { UserProfile } from "@/types/user";
 
@@ -30,21 +32,25 @@ type FormValues = z.infer<typeof schema>;
 
 interface EmploymentTabProps {
   profile: UserProfile;
+  onSaved: () => void;
 }
 
-export function EmploymentTab({ profile }: EmploymentTabProps) {
+export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
   const employment = profile.employment;
   const [positions, setPositions] = useState<LookupItem[]>([]);
   const [offices, setOffices] = useState<LookupItem[]>([]);
   const [departments, setDepartments] = useState<LookupItem[]>([]);
+  const [isLoadingLookups, setIsLoadingLookups] = useState(true);
 
   useEffect(() => {
-    lookupApi.getPositions().then(setPositions).catch(() => {});
-    lookupApi.getOffices().then(setOffices).catch(() => {});
-    lookupApi.getDepartments().then(setDepartments).catch(() => {});
+    Promise.all([
+      lookupApi.getPositions().then(setPositions).catch(() => {}),
+      lookupApi.getOffices().then(setOffices).catch(() => {}),
+      lookupApi.getDepartments().then(setDepartments).catch(() => {}),
+    ]).finally(() => setIsLoadingLookups(false));
   }, []);
 
-  const { register, reset } = useForm<FormValues>({
+  const { register, handleSubmit, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       position: "",
@@ -65,8 +71,32 @@ export function EmploymentTab({ profile }: EmploymentTabProps) {
     }
   }, [profile, employment, positions, offices, departments, reset]);
 
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await userApi.updateEmployment(profile.uuid, {
+        position_uuid: data.position || null,
+        department_uuid: data.department || null,
+        office_uuid: data.office_branch || null,
+        joined_date: data.joined_date || null,
+      });
+      toast.success("Employment information updated successfully.");
+      onSaved();
+    } catch {
+      toast.error("Failed to update employment information.");
+    }
+  };
+
+  if (isLoadingLookups) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-12 text-on-surface-variant">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        <span className="text-sm">Loading employment data...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+    <form id="form-employment" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
       {/* Position */}
       <div className="space-y-2">
         <Label htmlFor="position" className={FIELD_LABEL}>
@@ -133,6 +163,6 @@ export function EmploymentTab({ profile }: EmploymentTabProps) {
           {...register("joined_date")}
         />
       </div>
-    </div>
+    </form>
   );
 }

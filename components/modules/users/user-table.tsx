@@ -6,7 +6,7 @@ import {
   flexRender,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import type { UserProfile } from "@/types/user";
 
@@ -88,12 +88,27 @@ const columns: ColumnDef<UserProfile>[] = [
     ),
   },
   {
+    accessorKey: "is_active",
+    header: "Status",
+    cell: ({ row }) => (
+      <span
+        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+          row.original.is_active
+            ? "bg-emerald-500/10 text-emerald-600"
+            : "bg-ds-error/10 text-ds-error"
+        }`}
+      >
+        {row.original.is_active ? "Active" : "Inactive"}
+      </span>
+    ),
+  },
+  {
     id: "actions",
     header: "Actions",
     cell: ({ row, table }) => {
-      const meta = table.options.meta as { onDelete?: (uuid: string) => void; onEdit?: (uuid: string) => void };
+      const meta = table.options.meta as { onDelete?: (uuid: string) => void; onEdit?: (uuid: string) => void; onReactivate?: (uuid: string) => void };
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => meta.onEdit?.(row.original.uuid)}
             className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
@@ -101,13 +116,23 @@ const columns: ColumnDef<UserProfile>[] = [
           >
             <Pencil className="h-4 w-4" />
           </button>
-          <button
-            onClick={() => meta.onDelete?.(row.original.uuid)}
-            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
-            title="Delete user"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {row.original.is_active ? (
+            <button
+              onClick={() => meta.onDelete?.(row.original.uuid)}
+              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+              title="Delete user"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          ) : (
+            <button
+              onClick={() => meta.onReactivate?.(row.original.uuid)}
+              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-emerald-500/10 hover:text-emerald-600"
+              title="Reactivate user"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+          )}
         </div>
       );
     },
@@ -119,15 +144,16 @@ interface UserTableProps {
   isLoading: boolean;
   onEdit?: (uuid: string) => void;
   onDelete?: (uuid: string) => void;
+  onReactivate?: (uuid: string) => void;
 }
 
-export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps) {
+export function UserTable({ users, isLoading, onEdit, onDelete, onReactivate }: UserTableProps) {
   const table = useReactTable({
     data: users,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.uuid,
-    meta: { onEdit, onDelete },
+    meta: { onEdit, onDelete, onReactivate },
   });
 
   if (isLoading) {
@@ -160,7 +186,7 @@ export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
+                  className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
                 >
                   {header.isPlaceholder
                     ? null
@@ -180,7 +206,7 @@ export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps
               className="transition-colors hover:bg-surface-container-low/50"
             >
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-3 text-sm">
+                <td key={cell.id} className="px-4 py-3 text-sm text-center">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}

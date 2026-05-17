@@ -12,6 +12,13 @@ import { EmergencyTab } from "@/components/modules/users/edit/emergency-tab";
 const TABS = ["Personal", "Contact", "Employment", "Emergency"] as const;
 type Tab = (typeof TABS)[number];
 
+const FORM_IDS: Record<Tab, string> = {
+  Personal: "form-personal",
+  Contact: "form-contact",
+  Employment: "form-employment",
+  Emergency: "form-emergency",
+};
+
 export default function EditUserPage() {
   const { uuid } = useParams<{ uuid: string }>();
   const router = useRouter();
@@ -75,12 +82,12 @@ export default function EditUserPage() {
             </nav>
           </div>
 
-          {/* Tab Content */}
+          {/* Tab Content — all tabs stay mounted to avoid re-fetching lookup APIs */}
           <div className="p-6">
-            {activeTab === "Personal" && <PersonalTab profile={profile} />}
-            {activeTab === "Contact" && <ContactTab profile={profile} />}
-            {activeTab === "Employment" && <EmploymentTab profile={profile} />}
-            {activeTab === "Emergency" && <EmergencyTab profile={profile} />}
+            <div className={activeTab === "Personal" ? "" : "hidden"}><PersonalTab profile={profile} onSaved={refetch} /></div>
+            <div className={activeTab === "Contact" ? "" : "hidden"}><ContactTab profile={profile} onSaved={refetch} /></div>
+            <div className={activeTab === "Employment" ? "" : "hidden"}><EmploymentTab profile={profile} onSaved={refetch} /></div>
+            <div className={activeTab === "Emergency" ? "" : "hidden"}><EmergencyTab profile={profile} onSaved={refetch} /></div>
           </div>
 
           {/* Actions */}
@@ -91,7 +98,11 @@ export default function EditUserPage() {
             >
               Cancel
             </button>
-            <button className="rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-6 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90">
+            <button
+              type="submit"
+              form={FORM_IDS[activeTab]}
+              className="rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-6 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+            >
               Update
             </button>
           </div>
