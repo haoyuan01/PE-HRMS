@@ -2,11 +2,14 @@
 
 import { useState, useMemo } from "react";
 import { Search, SlidersHorizontal, Plus, X } from "lucide-react";
+import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useUsers } from "@/hooks/useUsers";
+import { userApi } from "@/lib/api/user";
 import { UserTable } from "@/components/modules/users/user-table";
 import { UserTablePagination } from "@/components/modules/users/user-table-pagination";
 import { UserFilterModal, type UserFilters } from "@/components/modules/users/user-filter-modal";
+import { UserDeleteModal } from "@/components/modules/users/user-delete-modal";
 
 export default function UserManagementPage() {
   const currentUserUuid = useAuthStore((s) => s.user?.uuid);
@@ -15,6 +18,7 @@ export default function UserManagementPage() {
   const [searchInput, setSearchInput] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<UserFilters>({ department: "", position: "" });
+  const [deleteUserUuid, setDeleteUserUuid] = useState<string | null>(null);
 
   const params = useMemo(
     () => ({
@@ -30,7 +34,7 @@ export default function UserManagementPage() {
   const { users, pagination, isLoading, error, refetch } = useUsers(params);
 
   const filteredUsers = useMemo(
-    () => users.filter((u) => u.uuid !== currentUserUuid),
+    () => users.filter((u) => u.uuid !== currentUserUuid && u.is_active),
     [users, currentUserUuid]
   );
 
@@ -112,7 +116,11 @@ export default function UserManagementPage() {
           </div>
         ) : (
           <>
-            <UserTable users={filteredUsers} isLoading={isLoading} />
+            <UserTable
+              users={filteredUsers}
+              isLoading={isLoading}
+              onDelete={(uuid) => setDeleteUserUuid(uuid)}
+            />
             {pagination && pagination.total > 0 && (
               <UserTablePagination
                 pagination={pagination}
@@ -133,6 +141,19 @@ export default function UserManagementPage() {
           setIsFilterOpen(false);
         }}
         initialFilters={filters}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <UserDeleteModal
+        open={deleteUserUuid !== null}
+        onClose={() => setDeleteUserUuid(null)}
+        onConfirm={async () => {
+          if (!deleteUserUuid) return;
+          await userApi.deleteUser(deleteUserUuid);
+          toast.success("User deleted successfully.");
+          setDeleteUserUuid(null);
+          refetch();
+        }}
       />
     </div>
   );

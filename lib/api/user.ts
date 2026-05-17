@@ -81,6 +81,10 @@ export const userApi = {
     return response.data;
   },
 
+  deleteUser: async (uuid: string): Promise<void> => {
+    await apiClient.patch(`/users/${uuid}`, { is_active: false });
+  },
+
   changePassword: async (uuid: string, data: ChangePasswordRequest): Promise<void> => {
     await apiClient.patch(`/users/${uuid}/password`, data);
   },
