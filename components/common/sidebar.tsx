@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -25,6 +25,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { authApi } from "@/lib/api/auth";
 import { APP_NAME, ROUTES } from "@/lib/constants";
 import { useSidebarStore } from "@/stores/useSidebarStore";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
 
 interface SubNavItem {
   label: string;
@@ -79,7 +80,17 @@ const navItems: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const clearAuth = useAuthStore((s) => s.clearAuth);
-  const { isCollapsed, toggle } = useSidebarStore();
+  const { isCollapsed, toggle, isMobileOpen, setMobileOpen } = useSidebarStore();
+  const isDesktop = useIsDesktop();
+
+  // On mobile the sidebar is always the full (expanded) drawer — collapse only
+  // applies on desktop.
+  const collapsed = isDesktop ? isCollapsed : false;
+
+  // Close the mobile drawer when the route changes.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname, setMobileOpen]);
 
   // Track which parent menus are expanded
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(() => {
@@ -115,15 +126,27 @@ export function Sidebar() {
   };
 
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 z-30 flex h-screen flex-col bg-surface-container-low transition-all duration-300",
-        isCollapsed ? "w-[72px]" : "w-[260px]"
+    <>
+      {/* Mobile backdrop — closes the drawer when tapped */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
       )}
-    >
+
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 flex h-screen flex-col bg-surface-container-low transition-all duration-300",
+          collapsed ? "w-[72px]" : "w-[260px]",
+          // Off-canvas on mobile, always visible on desktop
+          isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
       {/* Brand + Collapse Toggle */}
-      <div className={cn("flex items-center px-5", isCollapsed ? "h-20 pt-2" : "h-16")}>
-        {isCollapsed ? (
+      <div className={cn("flex items-center px-5", collapsed ? "h-20 pt-2" : "h-16")}>
+        {collapsed ? (
           <div className="flex w-full flex-col items-center gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ds-primary">
               <Cloud className="h-4 w-4 text-white" />
@@ -153,7 +176,7 @@ export function Sidebar() {
             </div>
             <button
               onClick={toggle}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-container-high text-on-surface-variant shadow-sm hover:bg-surface-container-highest hover:text-on-surface transition-all"
+              className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-container-high text-on-surface-variant shadow-sm hover:bg-surface-container-highest hover:text-on-surface transition-all lg:flex"
               title="Collapse sidebar"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -182,7 +205,7 @@ export function Sidebar() {
                   onClick={() => {
                     toggleMenu(item.href);
                     // If collapsed, expand sidebar first
-                    if (isCollapsed) {
+                    if (collapsed) {
                       useSidebarStore.getState().setCollapsed(false);
                     }
                   }}
@@ -192,7 +215,7 @@ export function Sidebar() {
                       ? "bg-ds-primary/10 text-ds-primary"
                       : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
                   )}
-                  title={isCollapsed ? item.label : undefined}
+                  title={collapsed ? item.label : undefined}
                 >
                   <item.icon
                     className={cn(
@@ -202,7 +225,7 @@ export function Sidebar() {
                         : "text-on-surface-variant group-hover:text-on-surface"
                     )}
                   />
-                  {!isCollapsed && (
+                  {!collapsed && (
                     <>
                       <span className="flex-1 truncate text-left">
                         {item.label}
@@ -218,7 +241,7 @@ export function Sidebar() {
                 </button>
 
                 {/* Sub-items with animation */}
-                {!isCollapsed && (
+                {!collapsed && (
                   <div
                     className={cn(
                       "grid transition-[grid-template-rows] duration-200 ease-in-out",
@@ -262,7 +285,7 @@ export function Sidebar() {
                   ? "bg-ds-primary/10 text-ds-primary"
                   : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
               )}
-              title={isCollapsed ? item.label : undefined}
+              title={collapsed ? item.label : undefined}
             >
               <item.icon
                 className={cn(
@@ -272,7 +295,7 @@ export function Sidebar() {
                     : "text-on-surface-variant group-hover:text-on-surface"
                 )}
               />
-              {!isCollapsed && <span className="truncate">{item.label}</span>}
+              {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
         })}
@@ -284,12 +307,13 @@ export function Sidebar() {
         <button
           onClick={handleSignOut}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-on-surface-variant hover:bg-ds-error/10 hover:text-ds-error transition-colors"
-          title={isCollapsed ? "Sign Out" : undefined}
+          title={collapsed ? "Sign Out" : undefined}
         >
           <LogOut className="h-5 w-5 shrink-0" />
-          {!isCollapsed && <span>Sign Out</span>}
+          {!collapsed && <span>Sign Out</span>}
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

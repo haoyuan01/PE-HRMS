@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex w-full max-w-md flex-col items-center">
       {/* Form Card */}
-      <div className="w-full rounded-2xl bg-surface-container-lowest p-8 shadow-[var(--shadow-ambient)]">
+      <div className="w-full rounded-2xl bg-surface-container-lowest p-6 shadow-[var(--shadow-ambient)] sm:p-8">
         {/* Icon */}
         <div className="mb-6 flex justify-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container-low">

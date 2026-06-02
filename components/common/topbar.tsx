@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, UserCog, LogOut } from "lucide-react";
+import { Bell, UserCog, LogOut, Menu } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useSidebarStore } from "@/stores/useSidebarStore";
 import { authApi } from "@/lib/api/auth";
@@ -14,6 +14,7 @@ export function Topbar() {
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const isCollapsed = useSidebarStore((s) => s.isCollapsed);
+  const toggleMobile = useSidebarStore((s) => s.toggleMobile);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -52,10 +53,20 @@ export function Topbar() {
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 z-20 flex h-16 items-center justify-end gap-4 border-b border-outline-variant/40 bg-surface/80 px-6 backdrop-blur-xl transition-all duration-300",
-        isCollapsed ? "left-[72px]" : "left-[260px]"
+        "fixed top-0 right-0 left-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-outline-variant/40 bg-surface/80 px-4 backdrop-blur-xl transition-all duration-300 sm:px-6 lg:justify-end",
+        isCollapsed ? "lg:left-[72px]" : "lg:left-[260px]"
       )}
     >
+      {/* Mobile hamburger — opens the sidebar drawer */}
+      <button
+        onClick={toggleMobile}
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors lg:hidden"
+        aria-label="Open menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      <div className="flex items-center gap-4">
       {/* Notification Bell */}
       <button className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors">
         <Bell className="h-5 w-5" />
@@ -97,6 +108,7 @@ export function Topbar() {
             Logout
           </button>
         </div>
+      </div>
       </div>
     </header>
   );

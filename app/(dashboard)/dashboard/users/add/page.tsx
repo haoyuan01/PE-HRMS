@@ -222,7 +222,7 @@ export default function AddUserPage() {
           <span className="text-sm text-on-surface-variant">Loading...</span>
         </div>
       ) : (
-        <div className="rounded-2xl bg-surface-container-lowest p-8 shadow-[var(--shadow-ambient)]">
+        <div className="rounded-2xl bg-surface-container-lowest p-4 shadow-[var(--shadow-ambient)] sm:p-6 md:p-8">
           {/* Profile Photo */}
           <div className="flex items-center gap-5">
             <div className="relative">

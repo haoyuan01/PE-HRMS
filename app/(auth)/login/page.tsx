@@ -74,7 +74,7 @@ export default function LoginPage() {
       </div>
 
       {/* Form Card */}
-      <div className="w-full rounded-2xl bg-surface-container-lowest p-8 shadow-[var(--shadow-ambient)]">
+      <div className="w-full rounded-2xl bg-surface-container-lowest p-6 shadow-[var(--shadow-ambient)] sm:p-8">
         <div className="mb-8">
           <h2 className="font-display text-xl font-bold tracking-tight text-on-surface">
             Welcome Back

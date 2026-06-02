@@ -63,9 +63,9 @@ export default function UserManagementPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Search */}
-        <form onSubmit={handleSearch} className="relative max-w-sm flex-1">
+        <form onSubmit={handleSearch} className="relative w-full sm:max-w-sm sm:flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
           <input
             type="text"
@@ -76,7 +76,7 @@ export default function UserManagementPage() {
           />
         </form>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Filters */}
           <button
             onClick={() => setIsFilterOpen(true)}

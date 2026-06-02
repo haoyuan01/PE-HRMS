@@ -16,12 +16,12 @@ export function UserTablePagination({
   const to = Math.min(current_page * per_page, total);
 
   return (
-    <div className="flex items-center justify-between px-4 py-4">
+    <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-on-surface-variant">
         Showing {from} of {total} users
       </p>
 
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <button
           onClick={() => onPageChange(current_page - 1)}
           disabled={current_page <= 1}

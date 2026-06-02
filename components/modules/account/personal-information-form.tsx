@@ -207,7 +207,7 @@ export function PersonalInformationForm({
   };
 
   return (
-    <div className="rounded-2xl bg-surface-container-lowest p-8 shadow-[var(--shadow-ambient)]">
+    <div className="rounded-2xl bg-surface-container-lowest p-4 shadow-[var(--shadow-ambient)] sm:p-6 md:p-8">
       <h2 className="font-display text-lg font-semibold text-on-surface">
         Personal Information
       </h2>

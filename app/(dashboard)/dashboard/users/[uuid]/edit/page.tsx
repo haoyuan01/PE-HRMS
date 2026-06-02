@@ -61,13 +61,13 @@ export default function EditUserPage() {
       ) : profile ? (
         <div className="rounded-2xl bg-surface-container-lowest shadow-[var(--shadow-ambient)]">
           {/* Tabs */}
-          <div className="border-b border-outline-variant/20 px-6">
-            <nav className="flex gap-6">
+          <div className="border-b border-outline-variant/20 px-4 sm:px-6">
+            <nav className="flex gap-6 overflow-x-auto">
               {TABS.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`relative py-3 text-sm font-medium transition-colors ${
+                  className={`relative whitespace-nowrap py-3 text-sm font-medium transition-colors ${
                     activeTab === tab
                       ? "text-on-surface"
                       : "text-on-surface-variant hover:text-on-surface"
@@ -83,7 +83,7 @@ export default function EditUserPage() {
           </div>
 
           {/* Tab Content — all tabs stay mounted to avoid re-fetching lookup APIs */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <div className={activeTab === "Personal" ? "" : "hidden"}><PersonalTab profile={profile} onSaved={refetch} /></div>
             <div className={activeTab === "Contact" ? "" : "hidden"}><ContactTab profile={profile} onSaved={refetch} /></div>
             <div className={activeTab === "Employment" ? "" : "hidden"}><EmploymentTab profile={profile} onSaved={refetch} /></div>
@@ -91,7 +91,7 @@ export default function EditUserPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-outline-variant/20 px-6 py-4">
+          <div className="flex items-center justify-end gap-3 border-t border-outline-variant/20 px-4 py-4 sm:px-6">
             <button
               onClick={() => router.push("/dashboard/users")}
               className="rounded-lg px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high"
