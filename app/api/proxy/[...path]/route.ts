@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { AUTH_COOKIE_NAME } from "@/lib/constants";
+import { loggedFetch } from "@/lib/server-fetch";
 
 async function proxyRequest(
   request: NextRequest,
@@ -36,7 +37,7 @@ async function proxyRequest(
     }
   }
 
-  const apiRes = await fetch(
+  const apiRes = await loggedFetch(
     `${process.env.API_BASE_URL}/api/v1/${apiPath}${queryString}`,
     {
       method: request.method,

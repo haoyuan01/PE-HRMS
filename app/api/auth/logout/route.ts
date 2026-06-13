@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { AUTH_COOKIE_NAME, USER_UUID_COOKIE_NAME, PERMISSIONS_COOKIE_NAME } from "@/lib/constants";
+import { loggedFetch } from "@/lib/server-fetch";
 
 export async function POST() {
   const cookieStore = await cookies();
@@ -9,7 +10,7 @@ export async function POST() {
   // Invalidate the token on the Laravel backend
   if (token) {
     try {
-      await fetch(`${process.env.API_BASE_URL}/api/v1/auth/logout`, {
+      await loggedFetch(`${process.env.API_BASE_URL}/api/v1/auth/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
