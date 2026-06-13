@@ -3,10 +3,9 @@ import { cookies } from "next/headers";
 import { AUTH_COOKIE_NAME } from "@/lib/constants";
 import { loggedFetch } from "@/lib/server-fetch";
 
-async function proxyRequest(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+type RouteContext = { params: Promise<{ path: string[] }> };
+
+async function proxyRequest(request: NextRequest, { params }: RouteContext) {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
   const { path } = await params;
@@ -50,8 +49,21 @@ async function proxyRequest(
   return NextResponse.json(data, { status: apiRes.status });
 }
 
-export const GET = proxyRequest;
-export const POST = proxyRequest;
-export const PUT = proxyRequest;
-export const PATCH = proxyRequest;
-export const DELETE = proxyRequest;
+// Explicit named exports so Next.js reliably detects every supported method
+// at build time (assigning a shared function to `export const GET` can be
+// dropped from the production route manifest).
+export async function GET(request: NextRequest, ctx: RouteContext) {
+  return proxyRequest(request, ctx);
+}
+export async function POST(request: NextRequest, ctx: RouteContext) {
+  return proxyRequest(request, ctx);
+}
+export async function PUT(request: NextRequest, ctx: RouteContext) {
+  return proxyRequest(request, ctx);
+}
+export async function PATCH(request: NextRequest, ctx: RouteContext) {
+  return proxyRequest(request, ctx);
+}
+export async function DELETE(request: NextRequest, ctx: RouteContext) {
+  return proxyRequest(request, ctx);
+}
