@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { PersonalTab } from "@/components/modules/users/edit/personal-tab";
@@ -19,8 +19,8 @@ const FORM_IDS: Record<Tab, string> = {
   Emergency: "form-emergency",
 };
 
-export default function EditUserPage() {
-  const { uuid } = useParams<{ uuid: string }>();
+function EditUserContent() {
+  const uuid = useSearchParams().get("uuid") ?? "";
   const router = useRouter();
   const { profile, isLoading, error, refetch } = useUserProfile(uuid);
   const [activeTab, setActiveTab] = useState<Tab>("Personal");
@@ -109,5 +109,14 @@ export default function EditUserPage() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+export default function EditUserPage() {
+  // useSearchParams() must be inside a Suspense boundary.
+  return (
+    <Suspense>
+      <EditUserContent />
+    </Suspense>
   );
 }

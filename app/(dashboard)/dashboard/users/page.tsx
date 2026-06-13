@@ -128,7 +128,7 @@ export default function UserManagementPage() {
             <UserTable
               users={filteredUsers}
               isLoading={isLoading}
-              onEdit={(uuid) => router.push(`/dashboard/users/${uuid}/edit`)}
+              onEdit={(uuid) => router.push(`/dashboard/users/edit?uuid=${uuid}`)}
               onDelete={(uuid) => setDeleteUserUuid(uuid)}
               onReactivate={(uuid) => setReactivateUserUuid(uuid)}
             />

@@ -1,0 +1,16 @@
+# Netlify configuration for the Next.js app.
+# Netlify auto-detects Next.js and enables its Next.js Runtime (which runs the
+# API routes in app/api/* and middleware.ts as serverless functions), so no
+# static export is needed.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Next.js 16 requires Node 20+.
+  NODE_VERSION = "20"
+
+# Remember to set API_BASE_URL in:
+#   Site settings → Environment variables
+# (same value as your local .env.local — https://havyh.xyz/public)
