@@ -322,7 +322,14 @@ export default function AddUserPage() {
                     name="role_uuid"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        items={roles.map((r) => ({
+                          value: r.uuid,
+                          label: r.name.charAt(0).toUpperCase() + r.name.slice(1),
+                        }))}
+                      >
                         <SelectTrigger className={FIELD_TRIGGER}>
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
@@ -464,7 +471,14 @@ export default function AddUserPage() {
                     name="gender"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        items={[
+                          { value: "male", label: "Male" },
+                          { value: "female", label: "Female" },
+                        ]}
+                      >
                         <SelectTrigger className={FIELD_TRIGGER}>
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
@@ -484,7 +498,14 @@ export default function AddUserPage() {
                     name="is_married"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        items={[
+                          { value: "single", label: "Single" },
+                          { value: "married", label: "Married" },
+                        ]}
+                      >
                         <SelectTrigger className={FIELD_TRIGGER}>
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -646,7 +667,11 @@ export default function AddUserPage() {
                     name="department"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        items={departments.map((d) => ({ value: d.uuid, label: d.name }))}
+                      >
                         <SelectTrigger className={FIELD_TRIGGER}>
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
@@ -667,7 +692,11 @@ export default function AddUserPage() {
                     name="office_branch"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        items={offices.map((o) => ({ value: o.uuid, label: o.name }))}
+                      >
                         <SelectTrigger className={FIELD_TRIGGER}>
                           <SelectValue placeholder="Select office branch" />
                         </SelectTrigger>
@@ -688,7 +717,11 @@ export default function AddUserPage() {
                     name="position"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        items={positions.map((p) => ({ value: p.uuid, label: p.name }))}
+                      >
                         <SelectTrigger className={FIELD_TRIGGER}>
                           <SelectValue placeholder="Select position" />
                         </SelectTrigger>

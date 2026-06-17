@@ -89,7 +89,11 @@ export function UserFilterModal({
             <label className="text-sm font-medium text-on-surface-variant">
               Department
             </label>
-            <Select value={department} onValueChange={(v) => setDepartment(v ?? "")}>
+            <Select
+              value={department}
+              onValueChange={(v) => setDepartment(v ?? "")}
+              items={departments.map((d) => ({ value: d.uuid, label: d.name }))}
+            >
               <SelectTrigger className={FIELD_TRIGGER}>
                 <SelectValue placeholder="All Departments" />
               </SelectTrigger>
@@ -109,7 +113,11 @@ export function UserFilterModal({
             <label className="text-sm font-medium text-on-surface-variant">
               Position
             </label>
-            <Select value={position} onValueChange={(v) => setPosition(v ?? "")}>
+            <Select
+              value={position}
+              onValueChange={(v) => setPosition(v ?? "")}
+              items={positions.map((p) => ({ value: p.uuid, label: p.name }))}
+            >
               <SelectTrigger className={FIELD_TRIGGER}>
                 <SelectValue placeholder="All Positions" />
               </SelectTrigger>

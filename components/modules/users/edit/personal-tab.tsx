@@ -222,7 +222,14 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
             name="gender"
             control={control}
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                items={[
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                ]}
+              >
                 <SelectTrigger className={FIELD_TRIGGER}>
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
@@ -242,7 +249,14 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
             name="is_married"
             control={control}
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                items={[
+                  { value: "single", label: "Single" },
+                  { value: "married", label: "Married" },
+                ]}
+              >
                 <SelectTrigger className={FIELD_TRIGGER}>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
