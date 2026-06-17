@@ -5,10 +5,10 @@ export default function RolePage() {
         Configuration
       </p>
       <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-on-surface">
-        Role
+        Permission
       </h1>
       <p className="mt-1 text-sm text-on-surface-variant">
-        Manage roles and their permissions.
+        Manage permissions and their access.
       </p>
     </div>
   );

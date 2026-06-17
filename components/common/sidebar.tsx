@@ -67,7 +67,7 @@ const navItems: NavItem[] = [
     href: "/dashboard/configuration",
     icon: Settings,
     children: [
-      { label: "Role", href: "/dashboard/configuration/role" },
+      { label: "Permission", href: "/dashboard/configuration/role" },
       { label: "Position", href: "/dashboard/configuration/position" },
       { label: "Department", href: "/dashboard/configuration/department" },
       { label: "Branch Office", href: "/dashboard/configuration/branch-office" },
