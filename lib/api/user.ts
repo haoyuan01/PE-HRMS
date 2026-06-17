@@ -88,6 +88,7 @@ export const userApi = {
   updateEmployment: async (
     userUuid: string,
     data: {
+      role_uuid?: string | null;
       department_uuid?: string | null;
       position_uuid?: string | null;
       office_uuid?: string | null;

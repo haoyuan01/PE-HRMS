@@ -29,6 +29,7 @@ const FIELD_TRIGGER =
   "border-0 bg-surface-container-low px-4 py-3 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all w-full rounded-lg text-base md:text-sm h-auto";
 
 const schema = z.object({
+  role: z.string(),
   position: z.string(),
   office_branch: z.string(),
   department: z.string(),
@@ -44,6 +45,7 @@ interface EmploymentTabProps {
 
 export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
   const employment = profile.employment;
+  const [roles, setRoles] = useState<LookupItem[]>([]);
   const [positions, setPositions] = useState<LookupItem[]>([]);
   const [offices, setOffices] = useState<LookupItem[]>([]);
   const [departments, setDepartments] = useState<LookupItem[]>([]);
@@ -51,6 +53,7 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
 
   useEffect(() => {
     Promise.all([
+      lookupApi.getRoles().then(setRoles).catch(() => {}),
       lookupApi.getPositions().then(setPositions).catch(() => {}),
       lookupApi.getOffices().then(setOffices).catch(() => {}),
       lookupApi.getDepartments().then(setDepartments).catch(() => {}),
@@ -60,6 +63,7 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
   const { register, handleSubmit, reset, control } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      role: "",
       position: "",
       office_branch: "",
       department: "",
@@ -70,17 +74,19 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
   useEffect(() => {
     if (profile) {
       reset({
+        role: profile.roles?.[0]?.uuid ?? "",
         position: employment?.position?.uuid ?? "",
         office_branch: employment?.office?.uuid ?? "",
         department: employment?.department?.uuid ?? "",
         joined_date: employment?.joined_date?.split("T")[0] ?? "",
       });
     }
-  }, [profile, employment, positions, offices, departments, reset]);
+  }, [profile, employment, roles, positions, offices, departments, reset]);
 
   const onSubmit = async (data: FormValues) => {
     try {
       await userApi.updateEmployment(profile.uuid, {
+        role_uuid: data.role || null,
         position_uuid: data.position || null,
         department_uuid: data.department || null,
         office_uuid: data.office_branch || null,
@@ -104,6 +110,36 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
 
   return (
     <form id="form-employment" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+      {/* Role */}
+      <div className="space-y-2 md:col-span-2">
+        <Label className={FIELD_LABEL}>Role</Label>
+        <Controller
+          name="role"
+          control={control}
+          render={({ field }) => (
+            <Select
+              value={field.value}
+              onValueChange={field.onChange}
+              items={roles.map((r) => ({
+                value: r.uuid,
+                label: r.name.charAt(0).toUpperCase() + r.name.slice(1),
+              }))}
+            >
+              <SelectTrigger className={FIELD_TRIGGER}>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {roles.map((role) => (
+                  <SelectItem key={role.uuid} value={role.uuid}>
+                    {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
+
       {/* Position */}
       <div className="space-y-2">
         <Label className={FIELD_LABEL}>Position</Label>
