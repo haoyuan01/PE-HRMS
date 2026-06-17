@@ -88,7 +88,6 @@ export const userApi = {
   updateEmployment: async (
     userUuid: string,
     data: {
-      role_uuid?: string | null;
       department_uuid?: string | null;
       position_uuid?: string | null;
       office_uuid?: string | null;
@@ -98,6 +97,25 @@ export const userApi = {
     const response = await apiClient.put<UserProfileResponse>(
       "/user-employments",
       { user_uuid: userUuid, ...data }
+    );
+    return response.data;
+  },
+
+  // Updates the user record itself (role, email). role_uuid lives on the user,
+  // not on /user-employments — this hits PUT /users/{uuid} (via _method=PUT).
+  updateUser: async (
+    uuid: string,
+    data: { email?: string; role_uuid?: string | null }
+  ): Promise<UserProfileResponse> => {
+    const formData = new FormData();
+    formData.append("_method", "PUT");
+    if (data.email != null) formData.append("email", data.email);
+    if (data.role_uuid != null) formData.append("role_uuid", data.role_uuid);
+
+    const response = await apiClient.post<UserProfileResponse>(
+      `/users/${uuid}`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
     );
     return response.data;
   },

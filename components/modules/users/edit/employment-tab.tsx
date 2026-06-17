@@ -85,13 +85,24 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      await userApi.updateEmployment(profile.uuid, {
-        role_uuid: data.role || null,
-        position_uuid: data.position || null,
-        department_uuid: data.department || null,
-        office_uuid: data.office_branch || null,
-        joined_date: data.joined_date || null,
-      });
+      // Employment fields and the user's role live on different endpoints:
+      // employment -> /user-employments, role_uuid -> /users/{uuid}.
+      await Promise.all([
+        userApi.updateEmployment(profile.uuid, {
+          position_uuid: data.position || null,
+          department_uuid: data.department || null,
+          office_uuid: data.office_branch || null,
+          joined_date: data.joined_date || null,
+        }),
+        ...(data.role && data.role !== (profile.roles?.[0]?.uuid ?? "")
+          ? [
+              userApi.updateUser(profile.uuid, {
+                email: profile.email,
+                role_uuid: data.role,
+              }),
+            ]
+          : []),
+      ]);
       toast.success("Employment information updated successfully.");
       onSaved();
     } catch {
@@ -112,7 +123,7 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
     <form id="form-employment" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
       {/* Role */}
       <div className="space-y-2 md:col-span-2">
-        <Label className={FIELD_LABEL}>Role</Label>
+        <Label className={FIELD_LABEL}>Permission</Label>
         <Controller
           name="role"
           control={control}
@@ -126,7 +137,7 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
               }))}
             >
               <SelectTrigger className={FIELD_TRIGGER}>
-                <SelectValue placeholder="Select role" />
+                <SelectValue placeholder="Select permission" />
               </SelectTrigger>
               <SelectContent>
                 {roles.map((role) => (

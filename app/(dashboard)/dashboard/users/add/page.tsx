@@ -317,7 +317,7 @@ export default function AddUserPage() {
 
                 {/* Role */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Role *</Label>
+                  <Label className={FIELD_LABEL}>Permission *</Label>
                   <Controller
                     name="role_uuid"
                     control={control}
@@ -331,7 +331,7 @@ export default function AddUserPage() {
                         }))}
                       >
                         <SelectTrigger className={FIELD_TRIGGER}>
-                          <SelectValue placeholder="Select role" />
+                          <SelectValue placeholder="Select permission" />
                         </SelectTrigger>
                         <SelectContent>
                           {roles.map((role) => (
