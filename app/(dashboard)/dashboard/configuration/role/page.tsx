@@ -1,15 +1,22 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Search, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useRoles } from "@/hooks/useRoles";
+import { roleApi } from "@/lib/api/role";
 import { RoleTable } from "@/components/modules/configuration/role-table";
+import { RoleDeleteModal } from "@/components/modules/configuration/role-delete-modal";
+import { PinResetSentModal } from "@/components/modules/configuration/pin-reset-sent-modal";
 
 export default function PermissionPage() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [deleteRoleUuid, setDeleteRoleUuid] = useState<string | null>(null);
+  const [pinResetSent, setPinResetSent] = useState(false);
 
   const params = useMemo(
     () => ({
@@ -56,7 +63,7 @@ export default function PermissionPage() {
 
         {/* New Permission */}
         <button
-          onClick={() => toast.info("Creating permissions is coming soon.")}
+          onClick={() => router.push("/dashboard/configuration/role/add")}
           className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
         >
           <Plus className="h-4 w-4" />
@@ -81,8 +88,10 @@ export default function PermissionPage() {
             <RoleTable
               roles={roles}
               isLoading={isLoading}
-              onEdit={() => toast.info("Editing permissions is coming soon.")}
-              onDelete={() => toast.info("Deleting permissions is coming soon.")}
+              onEdit={(uuid) =>
+                router.push(`/dashboard/configuration/role/edit?uuid=${uuid}`)
+              }
+              onDelete={(uuid) => setDeleteRoleUuid(uuid)}
             />
             {pagination && pagination.total > 0 && (
               <div className="flex flex-col gap-3 border-t border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -110,6 +119,30 @@ export default function PermissionPage() {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <RoleDeleteModal
+        open={deleteRoleUuid !== null}
+        onClose={() => setDeleteRoleUuid(null)}
+        onConfirm={async (pin) => {
+          if (!deleteRoleUuid) return;
+          await roleApi.deleteRole(deleteRoleUuid, pin);
+          toast.success("Permission deleted successfully.");
+          setDeleteRoleUuid(null);
+          refetch();
+        }}
+        onForgotPin={async () => {
+          await roleApi.requestSecurityPinReset();
+          setDeleteRoleUuid(null);
+          setPinResetSent(true);
+        }}
+      />
+
+      {/* Security PIN Reset Email Sent Modal */}
+      <PinResetSentModal
+        open={pinResetSent}
+        onClose={() => setPinResetSent(false)}
+      />
     </div>
   );
 }
