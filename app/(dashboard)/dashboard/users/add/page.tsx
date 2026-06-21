@@ -3,9 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
+import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ArrowLeft, Camera, Loader2, Pencil, UserCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Camera,
+  Eye,
+  EyeOff,
+  Loader2,
+  Pencil,
+  UserCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,16 +63,20 @@ const COUNTRIES = [
 const schema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  passcode: z
+    .string()
+    .min(1, "Security PIN is required")
+    .regex(/^\d{6}$/, "PIN must be 6 digits"),
   role_uuid: z.string().min(1, "Role is required"),
   full_name: z.string().min(1, "Full name is required"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
-  identity_number: z.string(),
-  passport_number: z.string(),
-  passport_expiry_date: z.string(),
-  blood_type: z.string(),
-  gender: z.string(),
-  is_married: z.string(),
+  identity_number: z.string().min(1, "Identity number is required"),
+  passport_number: z.string().min(1, "Passport number is required"),
+  passport_expiry_date: z.string().min(1, "Passport expiry date is required"),
+  blood_type: z.string().min(1, "Blood type is required"),
+  gender: z.string().min(1, "Gender is required"),
+  is_married: z.string().min(1, "Marital status is required"),
   company_email: z.string(),
   phone_number: z.string(),
   address_1: z.string(),
@@ -73,10 +86,10 @@ const schema = z.object({
   state: z.string(),
   postcode: z.string(),
   country: z.string(),
-  department: z.string(),
-  office_branch: z.string(),
-  position: z.string(),
-  joined_date: z.string(),
+  department: z.string().min(1, "Department is required"),
+  office_branch: z.string().min(1, "Office branch is required"),
+  position: z.string().min(1, "Position is required"),
+  joined_date: z.string().min(1, "Date of joined is required"),
   emergency_name: z.string(),
   emergency_phone: z.string(),
   emergency_relationship: z.string(),
@@ -84,10 +97,46 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+// Maps the backend validation keys (e.g. "personal.full_name") returned in a
+// 422 response to the corresponding form field names so errors show inline.
+const API_FIELD_TO_FORM: Record<string, keyof FormValues> = {
+  email: "email",
+  password: "password",
+  passcode: "passcode",
+  role_uuid: "role_uuid",
+  "personal.full_name": "full_name",
+  "personal.first_name": "first_name",
+  "personal.last_name": "last_name",
+  "personal.identity_number": "identity_number",
+  "personal.passport_number": "passport_number",
+  "personal.passport_expiry_date": "passport_expiry_date",
+  "personal.blood_type": "blood_type",
+  "personal.gender": "gender",
+  "personal.is_married": "is_married",
+  "contact.company_email": "company_email",
+  "contact.phone_number": "phone_number",
+  "contact.address_1": "address_1",
+  "contact.address_2": "address_2",
+  "contact.address_3": "address_3",
+  "contact.city": "city",
+  "contact.state": "state",
+  "contact.postcode": "postcode",
+  "contact.country": "country",
+  "employment.position_uuid": "position",
+  "employment.department_uuid": "department",
+  "employment.office_uuid": "office_branch",
+  "employment.joined_date": "joined_date",
+  "emergency.name": "emergency_name",
+  "emergency.phone_number": "emergency_phone",
+  "emergency.relationship": "emergency_relationship",
+};
+
 export default function AddUserPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasscode, setShowPasscode] = useState(false);
   const [isLoadingLookups, setIsLoadingLookups] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -109,12 +158,14 @@ export default function AddUserPage() {
     register,
     handleSubmit,
     control,
+    setError,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       email: "",
       password: "",
+      passcode: "",
       role_uuid: "",
       full_name: "",
       first_name: "",
@@ -150,6 +201,7 @@ export default function AddUserPage() {
       await userApi.createUser({
         email: data.email,
         password: data.password,
+        passcode: data.passcode,
         role_uuid: data.role_uuid,
         personal: {
           full_name: data.full_name,
@@ -188,8 +240,28 @@ export default function AddUserPage() {
       });
       toast.success("User created successfully.");
       router.push("/dashboard/users");
-    } catch {
-      toast.error("Failed to create user. Please try again.");
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: unknown } | undefined)?.message
+        : undefined;
+
+      if (message && typeof message === "object") {
+        // 422 validation errors — map each field to its input and show the first.
+        let firstMessage: string | undefined;
+        for (const [apiKey, value] of Object.entries(
+          message as Record<string, string[] | string>
+        )) {
+          const text = Array.isArray(value) ? value[0] : String(value);
+          if (!firstMessage) firstMessage = text;
+          const field = API_FIELD_TO_FORM[apiKey];
+          if (field) setError(field, { type: "server", message: text });
+        }
+        toast.error(firstMessage ?? "Failed to create user. Please try again.");
+      } else if (typeof message === "string") {
+        toast.error(message);
+      } else {
+        toast.error("Failed to create user. Please try again.");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -303,15 +375,62 @@ export default function AddUserPage() {
                   <Label htmlFor="password" className={FIELD_LABEL}>
                     Password *
                   </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Minimum 6 characters"
-                    className={FIELD_INPUT}
-                    {...register("password")}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Minimum 6 characters"
+                      className={`${FIELD_INPUT} pr-11`}
+                      {...register("password")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors hover:text-on-surface"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                   {errors.password && (
                     <p className="text-xs text-ds-error">{errors.password.message}</p>
+                  )}
+                </div>
+
+                {/* Security PIN */}
+                <div className="space-y-2">
+                  <Label htmlFor="passcode" className={FIELD_LABEL}>
+                    Security PIN *
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="passcode"
+                      type={showPasscode ? "text" : "password"}
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="6-digit PIN"
+                      className={`${FIELD_INPUT} pr-11`}
+                      {...register("passcode")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasscode((s) => !s)}
+                      aria-label={showPasscode ? "Hide PIN" : "Show PIN"}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors hover:text-on-surface"
+                    >
+                      {showPasscode ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.passcode && (
+                    <p className="text-xs text-ds-error">{errors.passcode.message}</p>
                   )}
                 </div>
 
@@ -407,7 +526,7 @@ export default function AddUserPage() {
                 {/* Identity Number */}
                 <div className="space-y-2">
                   <Label htmlFor="identity_number" className={FIELD_LABEL}>
-                    Identity No.
+                    Identity No. *
                   </Label>
                   <Input
                     id="identity_number"
@@ -415,12 +534,15 @@ export default function AddUserPage() {
                     className={FIELD_INPUT}
                     {...register("identity_number")}
                   />
+                  {errors.identity_number && (
+                    <p className="text-xs text-ds-error">{errors.identity_number.message}</p>
+                  )}
                 </div>
 
                 {/* Passport Number */}
                 <div className="space-y-2">
                   <Label htmlFor="passport_number" className={FIELD_LABEL}>
-                    Passport No.
+                    Passport No. *
                   </Label>
                   <Input
                     id="passport_number"
@@ -428,12 +550,15 @@ export default function AddUserPage() {
                     className={FIELD_INPUT}
                     {...register("passport_number")}
                   />
+                  {errors.passport_number && (
+                    <p className="text-xs text-ds-error">{errors.passport_number.message}</p>
+                  )}
                 </div>
 
                 {/* Passport Expiry Date */}
                 <div className="space-y-2">
                   <Label htmlFor="passport_expiry_date" className={FIELD_LABEL}>
-                    Passport Expiry Date
+                    Passport Expiry Date *
                   </Label>
                   <Input
                     id="passport_expiry_date"
@@ -441,11 +566,14 @@ export default function AddUserPage() {
                     className={FIELD_INPUT}
                     {...register("passport_expiry_date")}
                   />
+                  {errors.passport_expiry_date && (
+                    <p className="text-xs text-ds-error">{errors.passport_expiry_date.message}</p>
+                  )}
                 </div>
 
                 {/* Blood Type */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Blood Type</Label>
+                  <Label className={FIELD_LABEL}>Blood Type *</Label>
                   <Controller
                     name="blood_type"
                     control={control}
@@ -462,11 +590,14 @@ export default function AddUserPage() {
                       </Select>
                     )}
                   />
+                  {errors.blood_type && (
+                    <p className="text-xs text-ds-error">{errors.blood_type.message}</p>
+                  )}
                 </div>
 
                 {/* Gender */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Gender</Label>
+                  <Label className={FIELD_LABEL}>Gender *</Label>
                   <Controller
                     name="gender"
                     control={control}
@@ -489,11 +620,14 @@ export default function AddUserPage() {
                       </Select>
                     )}
                   />
+                  {errors.gender && (
+                    <p className="text-xs text-ds-error">{errors.gender.message}</p>
+                  )}
                 </div>
 
                 {/* Marital Status */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Marital Status</Label>
+                  <Label className={FIELD_LABEL}>Marital Status *</Label>
                   <Controller
                     name="is_married"
                     control={control}
@@ -516,6 +650,9 @@ export default function AddUserPage() {
                       </Select>
                     )}
                   />
+                  {errors.is_married && (
+                    <p className="text-xs text-ds-error">{errors.is_married.message}</p>
+                  )}
                 </div>
               </div>
             </section>
@@ -662,7 +799,7 @@ export default function AddUserPage() {
               <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
                 {/* Department */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Department</Label>
+                  <Label className={FIELD_LABEL}>Department *</Label>
                   <Controller
                     name="department"
                     control={control}
@@ -683,11 +820,14 @@ export default function AddUserPage() {
                       </Select>
                     )}
                   />
+                  {errors.department && (
+                    <p className="text-xs text-ds-error">{errors.department.message}</p>
+                  )}
                 </div>
 
                 {/* Office Branch */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Office Branch</Label>
+                  <Label className={FIELD_LABEL}>Office Branch *</Label>
                   <Controller
                     name="office_branch"
                     control={control}
@@ -708,11 +848,14 @@ export default function AddUserPage() {
                       </Select>
                     )}
                   />
+                  {errors.office_branch && (
+                    <p className="text-xs text-ds-error">{errors.office_branch.message}</p>
+                  )}
                 </div>
 
                 {/* Position */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Position</Label>
+                  <Label className={FIELD_LABEL}>Position *</Label>
                   <Controller
                     name="position"
                     control={control}
@@ -733,12 +876,15 @@ export default function AddUserPage() {
                       </Select>
                     )}
                   />
+                  {errors.position && (
+                    <p className="text-xs text-ds-error">{errors.position.message}</p>
+                  )}
                 </div>
 
                 {/* Joined Date */}
                 <div className="space-y-2">
                   <Label htmlFor="joined_date" className={FIELD_LABEL}>
-                    Date of Joined
+                    Date of Joined *
                   </Label>
                   <Input
                     id="joined_date"
@@ -746,6 +892,9 @@ export default function AddUserPage() {
                     className={FIELD_INPUT}
                     {...register("joined_date")}
                   />
+                  {errors.joined_date && (
+                    <p className="text-xs text-ds-error">{errors.joined_date.message}</p>
+                  )}
                 </div>
               </div>
             </section>

@@ -18,17 +18,17 @@ export const roleApi = {
     return response.data;
   },
 
-  // Soft-deletes (deactivates) a role via PATCH /roles/{uuid}. The PIN is
-  // forwarded for the upcoming security-PIN check; the backend ignores it for
-  // now but will validate it in the future.
+  // Soft-deletes (deactivates) a role via PATCH /roles/{uuid}. The security PIN
+  // is sent as the numeric `passcode` field the backend validates.
   deleteRole: async (uuid: string, pin?: string): Promise<void> => {
-    await apiClient.patch(`/roles/${uuid}`, { is_active: false, pin });
+    await apiClient.patch(`/roles/${uuid}`, {
+      is_active: false,
+      ...(pin ? { passcode: Number(pin) } : {}),
+    });
   },
 
-  // Requests a security-PIN reset email for the current user. The backend
-  // endpoint is not available yet — this is a placeholder to be wired up once
-  // it is ready, e.g. await apiClient.post("/security-pin/reset").
+  // Requests a security-PIN ("passcode") reset email for the current user.
   requestSecurityPinReset: async (): Promise<void> => {
-    // TODO: call the real endpoint when available.
+    await apiClient.post("/auth/forgot-passcode-email");
   },
 };

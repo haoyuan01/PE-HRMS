@@ -111,6 +111,11 @@ export interface ChangePasswordRequest {
   password_confirmation: string;
 }
 
+export interface ChangePasscodeRequest {
+  passcode: string;
+  passcode_confirmation: string;
+}
+
 export interface Pagination {
   current_page: number;
   last_page: number;

@@ -3,6 +3,7 @@ import type {
   UserProfileResponse,
   UserListResponse,
   ChangePasswordRequest,
+  ChangePasscodeRequest,
 } from "@/types/user";
 
 export const userApi = {
@@ -138,6 +139,7 @@ export const userApi = {
   createUser: async (data: {
     email: string;
     password: string;
+    passcode?: string;
     role_uuid: string;
     personal?: {
       full_name?: string;
@@ -177,6 +179,7 @@ export const userApi = {
     const formData = new FormData();
     formData.append("email", data.email);
     formData.append("password", data.password);
+    formData.append("passcode", data.passcode ?? "");
     formData.append("role_uuid", data.role_uuid);
 
     if (data.personal) {
@@ -239,5 +242,9 @@ export const userApi = {
 
   changePassword: async (uuid: string, data: ChangePasswordRequest): Promise<void> => {
     await apiClient.patch(`/users/${uuid}/password`, data);
+  },
+
+  changePasscode: async (uuid: string, data: ChangePasscodeRequest): Promise<void> => {
+    await apiClient.patch(`/users/${uuid}/passcode`, data);
   },
 };

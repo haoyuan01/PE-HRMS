@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,36 +28,109 @@ const changePasswordSchema = z
 
 type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
+const changePasscodeSchema = z
+  .object({
+    passcode: z.string().regex(/^\d{6}$/, "PIN must be 6 digits"),
+    passcode_confirmation: z.string().min(1, "Please confirm your new PIN"),
+  })
+  .refine((data) => data.passcode === data.passcode_confirmation, {
+    message: "PINs do not match",
+    path: ["passcode_confirmation"],
+  });
+
+type ChangePasscodeFormValues = z.infer<typeof changePasscodeSchema>;
+
+interface PasswordFieldProps {
+  id: string;
+  label: string;
+  placeholder: string;
+  error?: string;
+  inputMode?: "numeric";
+  maxLength?: number;
+  registration: ReturnType<ReturnType<typeof useForm>["register"]>;
+}
+
+// A masked input with an eye toggle to show/hide its value.
+function SecretField({
+  id,
+  label,
+  placeholder,
+  error,
+  inputMode,
+  maxLength,
+  registration,
+}: PasswordFieldProps) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id} className={FIELD_LABEL}>
+        {label}
+      </Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type={show ? "text" : "password"}
+          placeholder={placeholder}
+          inputMode={inputMode}
+          maxLength={maxLength}
+          className={`${FIELD_INPUT} pr-11`}
+          {...registration}
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          aria-label={show ? `Hide ${label}` : `Show ${label}`}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors hover:text-on-surface"
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+      {error && <p className="text-xs text-ds-error">{error}</p>}
+    </div>
+  );
+}
+
 interface SecurityFormProps {
   userUuid: string;
 }
 
 export function SecurityForm({ userUuid }: SecurityFormProps) {
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isSavingPasscode, setIsSavingPasscode] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ChangePasswordFormValues>({
+  const passwordForm = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
-    defaultValues: {
-      password: "",
-      password_confirmation: "",
-    },
+    defaultValues: { password: "", password_confirmation: "" },
   });
 
-  const onSubmit = async (data: ChangePasswordFormValues) => {
-    setIsSaving(true);
+  const passcodeForm = useForm<ChangePasscodeFormValues>({
+    resolver: zodResolver(changePasscodeSchema),
+    defaultValues: { passcode: "", passcode_confirmation: "" },
+  });
+
+  const onSubmitPassword = async (data: ChangePasswordFormValues) => {
+    setIsSavingPassword(true);
     try {
       await userApi.changePassword(userUuid, data);
       toast.success("Password updated successfully.");
-      reset();
+      passwordForm.reset();
     } catch {
       toast.error("Failed to update password. Please try again.");
     } finally {
-      setIsSaving(false);
+      setIsSavingPassword(false);
+    }
+  };
+
+  const onSubmitPasscode = async (data: ChangePasscodeFormValues) => {
+    setIsSavingPasscode(true);
+    try {
+      await userApi.changePasscode(userUuid, data);
+      toast.success("PIN updated successfully.");
+      passcodeForm.reset();
+    } catch {
+      toast.error("Failed to update PIN. Please try again.");
+    } finally {
+      setIsSavingPasscode(false);
     }
   };
 
@@ -67,65 +140,90 @@ export function SecurityForm({ userUuid }: SecurityFormProps) {
         Security
       </h2>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-6">
+      {/* Change Password */}
+      <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)} className="mt-6">
         <h3 className="font-display text-sm font-semibold text-on-surface">
           Change Password
         </h3>
 
         <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-          {/* New Password */}
-          <div className="space-y-2">
-            <Label htmlFor="password" className={FIELD_LABEL}>
-              New Password
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter new password"
-              className={FIELD_INPUT}
-              {...register("password")}
-            />
-            {errors.password && (
-              <p className="text-xs text-ds-error">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
-
-          {/* Confirm New Password */}
-          <div className="space-y-2">
-            <Label htmlFor="password_confirmation" className={FIELD_LABEL}>
-              Confirm New Password
-            </Label>
-            <Input
-              id="password_confirmation"
-              type="password"
-              placeholder="Re-enter new password"
-              className={FIELD_INPUT}
-              {...register("password_confirmation")}
-            />
-            {errors.password_confirmation && (
-              <p className="text-xs text-ds-error">
-                {errors.password_confirmation.message}
-              </p>
-            )}
-          </div>
+          <SecretField
+            id="password"
+            label="New Password"
+            placeholder="Enter new password"
+            error={passwordForm.formState.errors.password?.message}
+            registration={passwordForm.register("password")}
+          />
+          <SecretField
+            id="password_confirmation"
+            label="Confirm New Password"
+            placeholder="Re-enter new password"
+            error={passwordForm.formState.errors.password_confirmation?.message}
+            registration={passwordForm.register("password_confirmation")}
+          />
         </div>
 
-        {/* Update Button */}
         <div className="mt-6 flex justify-end">
           <button
             type="submit"
-            disabled={isSaving}
+            disabled={isSavingPassword}
             className="flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-6 py-3 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {isSaving ? (
+            {isSavingPassword ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Updating...
               </>
             ) : (
               "Update Password"
+            )}
+          </button>
+        </div>
+      </form>
+
+      {/* Divider */}
+      <div className="my-8 border-t border-outline-variant/20" />
+
+      {/* Change PIN */}
+      <form onSubmit={passcodeForm.handleSubmit(onSubmitPasscode)}>
+        <h3 className="font-display text-sm font-semibold text-on-surface">
+          Change PIN
+        </h3>
+
+        <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+          <SecretField
+            id="passcode"
+            label="New PIN"
+            placeholder="Enter 6-digit PIN"
+            inputMode="numeric"
+            maxLength={6}
+            error={passcodeForm.formState.errors.passcode?.message}
+            registration={passcodeForm.register("passcode")}
+          />
+          <SecretField
+            id="passcode_confirmation"
+            label="Confirm New PIN"
+            placeholder="Re-enter 6-digit PIN"
+            inputMode="numeric"
+            maxLength={6}
+            error={passcodeForm.formState.errors.passcode_confirmation?.message}
+            registration={passcodeForm.register("passcode_confirmation")}
+          />
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            type="submit"
+            disabled={isSavingPasscode}
+            className="flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-6 py-3 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {isSavingPasscode ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              "Update PIN"
             )}
           </button>
         </div>
