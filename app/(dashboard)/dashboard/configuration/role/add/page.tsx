@@ -2,25 +2,30 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  PermissionForm,
-  type PermissionFormValues,
-} from "@/components/modules/configuration/permission-form";
+import { usePermissionGroups } from "@/hooks/usePermissionGroups";
+import { roleApi } from "@/lib/api/role";
+import { PermissionForm } from "@/components/modules/configuration/permission-form";
 
 const LIST_ROUTE = "/dashboard/configuration/role";
 
 export default function AddPermissionPage() {
   const router = useRouter();
+  const { groups, isLoading, error, refetch } = usePermissionGroups();
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = async (values: PermissionFormValues) => {
+  const handleSubmit = async (values: {
+    name: string;
+    permissionUuids: string[];
+  }) => {
     setIsSaving(true);
     try {
-      // TODO: wire to backend — roleApi.createRole(values)
-      console.log("Create permission payload:", values);
-      toast.success("Permission created.");
+      await roleApi.createRole({
+        name: values.name,
+        permissions: values.permissionUuids.map((uuid) => ({ uuid })),
+      });
+      toast.success("Permission created successfully.");
       router.push(LIST_ROUTE);
     } catch {
       toast.error("Failed to create permission. Please try again.");
@@ -51,12 +56,30 @@ export default function AddPermissionPage() {
 
       {/* Form */}
       <div className="rounded-2xl bg-surface-container-lowest p-4 shadow-[var(--shadow-ambient)] sm:p-6 md:p-8">
-        <PermissionForm
-          mode="create"
-          isSaving={isSaving}
-          onCancel={() => router.push(LIST_ROUTE)}
-          onSubmit={handleSubmit}
-        />
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-2 py-20">
+            <Loader2 className="h-5 w-5 animate-spin text-on-surface-variant" />
+            <span className="text-sm text-on-surface-variant">Loading...</span>
+          </div>
+        ) : error || !groups ? (
+          <div>
+            <p className="text-sm text-ds-error">{error ?? "Failed to load permissions."}</p>
+            <button
+              onClick={refetch}
+              className="mt-3 text-sm font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <PermissionForm
+            mode="create"
+            groups={groups}
+            isSaving={isSaving}
+            onCancel={() => router.push(LIST_ROUTE)}
+            onSubmit={handleSubmit}
+          />
+        )}
       </div>
     </div>
   );

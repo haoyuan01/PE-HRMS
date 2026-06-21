@@ -1,12 +1,11 @@
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod/v4";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { PermissionGroups } from "@/lib/api/permission";
 
 const FIELD_INPUT =
   "border-0 bg-surface-container-low px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
@@ -14,147 +13,115 @@ const FIELD_INPUT =
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
 
-// The modules a permission can grant access to, in display order. The `key`
-// is the stable identifier used in the payload; `label` is what the user sees.
-export const PERMISSION_MODULES = [
-  { key: "request_form", label: "Request Form" },
-  { key: "leave_entitlement", label: "Leave Entitlement" },
-  { key: "user_management", label: "User Management" },
-  { key: "certificate", label: "Certificate" },
-  { key: "upcoming_events", label: "Upcoming Events" },
-  { key: "staff_movement", label: "Staff Movement" },
-  { key: "announcement", label: "Announcement" },
-  { key: "payslip", label: "Payslip" },
-  { key: "configuration", label: "Configuration" },
-] as const;
-
-export const PERMISSION_ACTIONS = ["read", "create", "update", "delete"] as const;
-
-export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];
-export type PermissionMatrix = Record<string, Record<PermissionAction, boolean>>;
-
-const ACTION_LABELS: Record<PermissionAction, string> = {
-  read: "Read",
-  create: "Create",
-  update: "Update",
-  delete: "Delete",
-};
-
-function emptyMatrix(): PermissionMatrix {
-  return PERMISSION_MODULES.reduce<PermissionMatrix>((acc, module) => {
-    acc[module.key] = { read: false, create: false, update: false, delete: false };
-    return acc;
-  }, {});
+// "activity_log" -> "Activity Log"
+function humanizeModule(key: string) {
+  return key
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
-const actionSchema = z.object({
-  read: z.boolean(),
-  create: z.boolean(),
-  update: z.boolean(),
-  delete: z.boolean(),
-});
-
-const schema = z.object({
-  name: z.string().min(1, "Name is required"),
-  permissions: z.record(z.string(), actionSchema),
-});
-
-export type PermissionFormValues = z.infer<typeof schema>;
+// "Read Activity Log" -> "Read" (the leading action word)
+function actionLabel(name: string) {
+  return name.split(" ")[0];
+}
 
 interface PermissionFormProps {
   mode: "create" | "edit";
+  groups: PermissionGroups;
   defaultName?: string;
-  defaultPermissions?: PermissionMatrix;
+  defaultSelected?: string[];
   isSaving?: boolean;
   onCancel: () => void;
-  onSubmit: (values: PermissionFormValues) => void;
+  onSubmit: (values: { name: string; permissionUuids: string[] }) => void;
 }
 
 export function PermissionForm({
   mode,
+  groups,
   defaultName = "",
-  defaultPermissions,
+  defaultSelected = [],
   isSaving = false,
   onCancel,
   onSubmit,
 }: PermissionFormProps) {
-  const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm<PermissionFormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      name: defaultName,
-      permissions: defaultPermissions ?? emptyMatrix(),
-    },
-  });
+  const [name, setName] = useState(defaultName);
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(defaultSelected)
+  );
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  const toggle = (uuid: string, checked: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(uuid);
+      else next.delete(uuid);
+      return next;
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setNameError("Name is required");
+      return;
+    }
+    setNameError(null);
+    onSubmit({ name: name.trim(), permissionUuids: Array.from(selected) });
+  };
+
+  const modules = Object.keys(groups);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8">
       {/* Name */}
       <div className="space-y-2">
-        <Label htmlFor="name" className={FIELD_LABEL}>
+        <Label htmlFor="role-name" className={FIELD_LABEL}>
           Name *
         </Label>
         <Input
-          id="name"
+          id="role-name"
           placeholder="Enter role name"
           className={FIELD_INPUT}
-          {...register("name")}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
-        {errors.name && (
-          <p className="text-xs text-ds-error">{errors.name.message}</p>
-        )}
+        {nameError && <p className="text-xs text-ds-error">{nameError}</p>}
       </div>
 
       {/* Permission matrix */}
-      <Controller
-        name="permissions"
-        control={control}
-        render={({ field }) => (
-          <div className="divide-y divide-outline-variant/20">
-            {PERMISSION_MODULES.map((module) => (
-              <section key={module.key} className="py-5 first:pt-0">
-                <h3 className="font-display text-sm font-semibold text-on-surface">
-                  {module.label}
-                </h3>
-                <div className="mt-3 grid grid-cols-2 gap-y-3 sm:grid-cols-4">
-                  {PERMISSION_ACTIONS.map((action) => {
-                    const id = `${module.key}-${action}`;
-                    const checked = field.value?.[module.key]?.[action] ?? false;
-                    return (
-                      <div key={action} className="flex items-center gap-2">
-                        <Checkbox
-                          id={id}
-                          checked={checked}
-                          onCheckedChange={(value) =>
-                            field.onChange({
-                              ...field.value,
-                              [module.key]: {
-                                ...field.value[module.key],
-                                [action]: value === true,
-                              },
-                            })
-                          }
-                          className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
-                        />
-                        <label
-                          htmlFor={id}
-                          className="cursor-pointer select-none text-sm text-on-surface"
-                        >
-                          {ACTION_LABELS[action]}
-                        </label>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
-      />
+      <div className="divide-y divide-outline-variant/20">
+        {modules.map((moduleKey) => (
+          <section key={moduleKey} className="py-5 first:pt-0">
+            <h3 className="font-display text-sm font-semibold text-on-surface">
+              {humanizeModule(moduleKey)}
+            </h3>
+            <div className="mt-3 grid grid-cols-2 gap-y-3 sm:grid-cols-4">
+              {groups[moduleKey].map((permission) => {
+                const checked = selected.has(permission.uuid);
+                return (
+                  <div key={permission.uuid} className="flex items-center gap-2">
+                    <Checkbox
+                      id={permission.uuid}
+                      checked={checked}
+                      onCheckedChange={(value) =>
+                        toggle(permission.uuid, value === true)
+                      }
+                      className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
+                    />
+                    <label
+                      htmlFor={permission.uuid}
+                      className="cursor-pointer select-none text-sm text-on-surface"
+                    >
+                      {actionLabel(permission.name)}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
 
       {/* Actions */}
       <div className="flex justify-end gap-3 border-t border-outline-variant/20 pt-6">

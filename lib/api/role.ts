@@ -8,6 +8,17 @@ export interface RoleListResponse {
   pagination: Pagination;
 }
 
+export interface RoleResponse {
+  success: boolean;
+  message: string;
+  data: Role;
+}
+
+export interface RolePayload {
+  name: string;
+  permissions: { uuid: string }[];
+}
+
 export const roleApi = {
   getRoles: async (params?: {
     page?: number;
@@ -16,6 +27,19 @@ export const roleApi = {
   }): Promise<RoleListResponse> => {
     const response = await apiClient.get<RoleListResponse>("/roles", { params });
     return response.data;
+  },
+
+  getRole: async (uuid: string): Promise<Role> => {
+    const response = await apiClient.get<RoleResponse>(`/roles/${uuid}`);
+    return response.data.data;
+  },
+
+  createRole: async (data: RolePayload): Promise<void> => {
+    await apiClient.post("/roles", data);
+  },
+
+  updateRole: async (uuid: string, data: RolePayload): Promise<void> => {
+    await apiClient.put(`/roles/${uuid}`, data);
   },
 
   // Soft-deletes (deactivates) a role via PATCH /roles/{uuid}. The security PIN

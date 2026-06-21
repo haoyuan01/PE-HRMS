@@ -1,6 +1,7 @@
 export interface Permission {
   code: string;
   name: string;
+  module?: string;
 }
 
 export interface Role {

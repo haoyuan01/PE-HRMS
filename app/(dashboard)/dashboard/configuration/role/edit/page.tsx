@@ -1,27 +1,66 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  PermissionForm,
-  type PermissionFormValues,
-} from "@/components/modules/configuration/permission-form";
+import { usePermissionGroups } from "@/hooks/usePermissionGroups";
+import { roleApi } from "@/lib/api/role";
+import { PermissionForm } from "@/components/modules/configuration/permission-form";
+import type { Role } from "@/types/auth";
 
 const LIST_ROUTE = "/dashboard/configuration/role";
 
 function EditPermissionContent() {
   const uuid = useSearchParams().get("uuid") ?? "";
   const router = useRouter();
+  const { groups, isLoading: isLoadingGroups, error: groupsError, refetch } =
+    usePermissionGroups();
+  const [role, setRole] = useState<Role | null>(null);
+  const [isLoadingRole, setIsLoadingRole] = useState(true);
+  const [roleError, setRoleError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = async (values: PermissionFormValues) => {
+  useEffect(() => {
+    let active = true;
+    roleApi
+      .getRole(uuid)
+      .then((data) => {
+        if (active) setRole(data);
+      })
+      .catch(() => {
+        if (active) setRoleError("Failed to load permission.");
+      })
+      .finally(() => {
+        if (active) setIsLoadingRole(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [uuid]);
+
+  // Match the role's assigned permissions (by name) to their lookup uuids.
+  const defaultSelected =
+    groups && role
+      ? Object.values(groups)
+          .flat()
+          .filter((option) =>
+            role.permissions.some((p) => p.name === option.name)
+          )
+          .map((option) => option.uuid)
+      : [];
+
+  const handleSubmit = async (values: {
+    name: string;
+    permissionUuids: string[];
+  }) => {
     setIsSaving(true);
     try {
-      // TODO: wire to backend — roleApi.updateRole(uuid, values)
-      console.log("Update permission payload:", { uuid, ...values });
-      toast.success("Permission updated.");
+      await roleApi.updateRole(uuid, {
+        name: values.name,
+        permissions: values.permissionUuids.map((id) => ({ uuid: id })),
+      });
+      toast.success("Permission updated successfully.");
       router.push(LIST_ROUTE);
     } catch {
       toast.error("Failed to update permission. Please try again.");
@@ -29,6 +68,9 @@ function EditPermissionContent() {
       setIsSaving(false);
     }
   };
+
+  const isLoading = isLoadingGroups || isLoadingRole;
+  const error = groupsError ?? roleError;
 
   return (
     <div className="space-y-6">
@@ -52,13 +94,32 @@ function EditPermissionContent() {
 
       {/* Form */}
       <div className="rounded-2xl bg-surface-container-lowest p-4 shadow-[var(--shadow-ambient)] sm:p-6 md:p-8">
-        {/* TODO: fetch role by uuid and pass defaultName / defaultPermissions */}
-        <PermissionForm
-          mode="edit"
-          isSaving={isSaving}
-          onCancel={() => router.push(LIST_ROUTE)}
-          onSubmit={handleSubmit}
-        />
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-2 py-20">
+            <Loader2 className="h-5 w-5 animate-spin text-on-surface-variant" />
+            <span className="text-sm text-on-surface-variant">Loading...</span>
+          </div>
+        ) : error || !groups || !role ? (
+          <div>
+            <p className="text-sm text-ds-error">{error ?? "Failed to load permission."}</p>
+            <button
+              onClick={refetch}
+              className="mt-3 text-sm font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <PermissionForm
+            mode="edit"
+            groups={groups}
+            defaultName={role.name}
+            defaultSelected={defaultSelected}
+            isSaving={isSaving}
+            onCancel={() => router.push(LIST_ROUTE)}
+            onSubmit={handleSubmit}
+          />
+        )}
       </div>
     </div>
   );
