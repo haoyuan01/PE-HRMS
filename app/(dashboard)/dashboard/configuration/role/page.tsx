@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import { Search, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useRoles } from "@/hooks/useRoles";
@@ -126,10 +127,23 @@ export default function PermissionPage() {
         onClose={() => setDeleteRoleUuid(null)}
         onConfirm={async (pin) => {
           if (!deleteRoleUuid) return;
-          await roleApi.deleteRole(deleteRoleUuid, pin);
-          toast.success("Permission deleted successfully.");
-          setDeleteRoleUuid(null);
-          refetch();
+          try {
+            await roleApi.deleteRole(deleteRoleUuid, pin);
+            toast.success("Permission deleted successfully.");
+            setDeleteRoleUuid(null);
+            refetch();
+          } catch (err) {
+            const message = axios.isAxiosError(err)
+              ? (err.response?.data as { message?: unknown } | undefined)?.message
+              : undefined;
+            const display =
+              message === "Role is assigned to user"
+                ? "Unable to delete: this role is still assigned to one or more users."
+                : typeof message === "string"
+                  ? message
+                  : "Failed to delete permission. Please try again.";
+            toast.error(display);
+          }
         }}
         onForgotPin={async () => {
           await roleApi.requestSecurityPinReset();

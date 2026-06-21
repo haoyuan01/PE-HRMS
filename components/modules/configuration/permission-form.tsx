@@ -13,8 +13,15 @@ const FIELD_INPUT =
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
 
+// Module keys whose displayed title differs from the humanized key.
+const MODULE_TITLE_OVERRIDES: Record<string, string> = {
+  role: "Permission",
+  activity_log: "Audit Log",
+};
+
 // "activity_log" -> "Activity Log"
 function humanizeModule(key: string) {
+  if (MODULE_TITLE_OVERRIDES[key]) return MODULE_TITLE_OVERRIDES[key];
   return key
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
