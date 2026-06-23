@@ -11,9 +11,14 @@ import {
   type PositionFormValues,
 } from "@/components/modules/configuration/position-form-modal";
 import { PositionDeleteModal } from "@/components/modules/configuration/position-delete-modal";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { Position } from "@/types/position";
 
 export default function PositionPage() {
+  const { can } = usePermissions();
+  const canCreate = can("position_create");
+  const canEdit = can("position_update");
+  const canDelete = can("position_delete");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -111,13 +116,15 @@ export default function PositionPage() {
         </form>
 
         {/* New Position */}
-        <button
-          onClick={openCreate}
-          className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          New Position
-        </button>
+        {canCreate && (
+          <button
+            onClick={openCreate}
+            className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            New Position
+          </button>
+        )}
       </div>
 
       {/* Table Card */}
@@ -137,6 +144,8 @@ export default function PositionPage() {
             <PositionTable
               positions={positions}
               isLoading={isLoading}
+              canEdit={canEdit}
+              canDelete={canDelete}
               onEdit={openEdit}
               onDelete={openDelete}
             />

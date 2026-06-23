@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { userApi } from "@/lib/api/user";
 import { lookupApi, type LookupItem } from "@/lib/api/lookup";
+import { useRequirePermission } from "@/hooks/useRequirePermission";
 
 const FIELD_INPUT =
   "border-0 bg-surface-container-low px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
@@ -133,6 +134,7 @@ const API_FIELD_TO_FORM: Record<string, keyof FormValues> = {
 
 export default function AddUserPage() {
   const router = useRouter();
+  const allowed = useRequirePermission("user_create", "/dashboard/users");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -266,6 +268,9 @@ export default function AddUserPage() {
       setIsSaving(false);
     }
   };
+
+  // Block direct URL access for users without create permission.
+  if (!allowed) return null;
 
   return (
     <div className="space-y-6">

@@ -10,9 +10,14 @@ import { roleApi } from "@/lib/api/role";
 import { RoleTable } from "@/components/modules/configuration/role-table";
 import { RoleDeleteModal } from "@/components/modules/configuration/role-delete-modal";
 import { PinResetSentModal } from "@/components/modules/configuration/pin-reset-sent-modal";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function PermissionPage() {
   const router = useRouter();
+  const { can } = usePermissions();
+  const canCreate = can("role_create");
+  const canEdit = can("role_update");
+  const canDelete = can("role_delete");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -63,13 +68,15 @@ export default function PermissionPage() {
         </form>
 
         {/* New Permission */}
-        <button
-          onClick={() => router.push("/dashboard/configuration/role/add")}
-          className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          New Permission
-        </button>
+        {canCreate && (
+          <button
+            onClick={() => router.push("/dashboard/configuration/role/add")}
+            className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            New Permission
+          </button>
+        )}
       </div>
 
       {/* Table Card */}
@@ -89,6 +96,8 @@ export default function PermissionPage() {
             <RoleTable
               roles={roles}
               isLoading={isLoading}
+              canEdit={canEdit}
+              canDelete={canDelete}
               onEdit={(uuid) =>
                 router.push(`/dashboard/configuration/role/edit?uuid=${uuid}`)
               }

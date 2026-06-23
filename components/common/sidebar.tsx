@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { usePermissions } from "@/hooks/usePermissions";
 import { authApi } from "@/lib/api/auth";
 import { APP_NAME, ROUTES } from "@/lib/constants";
 import { useSidebarStore } from "@/stores/useSidebarStore";
@@ -30,12 +31,16 @@ import { useIsDesktop } from "@/hooks/useMediaQuery";
 interface SubNavItem {
   label: string;
   href: string;
+  // Permission code required to see this item. Undefined = always visible.
+  permission?: string;
 }
 
 interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  // Permission code required to see this item. Undefined = always visible.
+  permission?: string;
   children?: SubNavItem[];
 }
 
@@ -52,7 +57,7 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Leave Entitlement", href: "/dashboard/leave", icon: CalendarOff },
-  { label: "User Management", href: "/dashboard/users", icon: Users },
+  { label: "User Management", href: "/dashboard/users", icon: Users, permission: "user_read" },
   { label: "Account", href: "/dashboard/account", icon: UserCog },
   { label: "Certificate", href: "/dashboard/certificates", icon: Award },
   { label: "Upcoming Events", href: "/dashboard/events", icon: CalendarDays },
@@ -67,12 +72,12 @@ const navItems: NavItem[] = [
     href: "/dashboard/configuration",
     icon: Settings,
     children: [
-      { label: "Permission", href: "/dashboard/configuration/role" },
-      { label: "Position", href: "/dashboard/configuration/position" },
-      { label: "Department", href: "/dashboard/configuration/department" },
-      { label: "Branch Office", href: "/dashboard/configuration/branch-office" },
+      { label: "Permission", href: "/dashboard/configuration/role", permission: "role_read" },
+      { label: "Position", href: "/dashboard/configuration/position", permission: "position_read" },
+      { label: "Department", href: "/dashboard/configuration/department", permission: "department_read" },
+      { label: "Branch Office", href: "/dashboard/configuration/branch-office", permission: "office_read" },
       { label: "System", href: "/dashboard/configuration/system" },
-      { label: "Audit Log", href: "/dashboard/configuration/audit-log" },
+      { label: "Audit Log", href: "/dashboard/configuration/audit-log", permission: "activity_log_read" },
     ],
   },
 ];
@@ -80,6 +85,7 @@ const navItems: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const { can } = usePermissions();
   const { isCollapsed, toggle, isMobileOpen, setMobileOpen } = useSidebarStore();
   const isDesktop = useIsDesktop();
 
@@ -187,7 +193,9 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-3">
-        {navItems.map((item) => {
+        {navItems
+          .filter((item) => !item.permission || can(item.permission))
+          .map((item) => {
           const hasChildren = !!item.children;
           const isExpanded = expandedMenus.has(item.href);
           const isParentActive = pathname.startsWith(item.href);
@@ -250,7 +258,11 @@ export function Sidebar() {
                   >
                     <div className="overflow-hidden">
                       <div className="mt-1 ml-4 space-y-0.5 border-l border-outline-variant/20 pl-4">
-                        {item.children!.map((child) => {
+                        {item.children!
+                          .filter(
+                            (child) => !child.permission || can(child.permission)
+                          )
+                          .map((child) => {
                           const isChildActive = pathname === child.href;
                           return (
                             <Link

@@ -42,25 +42,31 @@ const columns: ColumnDef<Department>[] = [
     header: "Actions",
     cell: ({ row, table }) => {
       const meta = table.options.meta as {
+        canEdit?: boolean;
+        canDelete?: boolean;
         onEdit?: (uuid: string) => void;
         onDelete?: (uuid: string) => void;
       };
       return (
         <div className="flex items-center justify-end gap-2">
-          <button
-            onClick={() => meta.onEdit?.(row.original.uuid)}
-            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
-            title="Edit department"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => meta.onDelete?.(row.original.uuid)}
-            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
-            title="Delete department"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {meta.canEdit && (
+            <button
+              onClick={() => meta.onEdit?.(row.original.uuid)}
+              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+              title="Edit department"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
+          {meta.canDelete && (
+            <button
+              onClick={() => meta.onDelete?.(row.original.uuid)}
+              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+              title="Delete department"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       );
     },
@@ -70,6 +76,8 @@ const columns: ColumnDef<Department>[] = [
 interface DepartmentTableProps {
   departments: Department[];
   isLoading: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
   onEdit?: (uuid: string) => void;
   onDelete?: (uuid: string) => void;
 }
@@ -77,6 +85,8 @@ interface DepartmentTableProps {
 export function DepartmentTable({
   departments,
   isLoading,
+  canEdit,
+  canDelete,
   onEdit,
   onDelete,
 }: DepartmentTableProps) {
@@ -85,7 +95,7 @@ export function DepartmentTable({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.uuid,
-    meta: { onEdit, onDelete },
+    meta: { canEdit, canDelete, onEdit, onDelete },
   });
 
   if (isLoading) {

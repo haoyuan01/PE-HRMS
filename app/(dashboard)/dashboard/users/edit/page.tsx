@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useRequirePermission } from "@/hooks/useRequirePermission";
 import { PersonalTab } from "@/components/modules/users/edit/personal-tab";
 import { ContactTab } from "@/components/modules/users/edit/contact-tab";
 import { EmploymentTab } from "@/components/modules/users/edit/employment-tab";
@@ -22,8 +23,12 @@ const FORM_IDS: Record<Tab, string> = {
 function EditUserContent() {
   const uuid = useSearchParams().get("uuid") ?? "";
   const router = useRouter();
+  const allowed = useRequirePermission("user_update", "/dashboard/users");
   const { profile, isLoading, error, refetch } = useUserProfile(uuid);
   const [activeTab, setActiveTab] = useState<Tab>("Personal");
+
+  // Block direct URL access for users without update permission.
+  if (!allowed) return null;
 
   return (
     <div className="space-y-6">

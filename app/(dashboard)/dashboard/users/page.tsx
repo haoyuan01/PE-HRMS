@@ -12,10 +12,15 @@ import { UserTablePagination } from "@/components/modules/users/user-table-pagin
 import { UserFilterModal, type UserFilters } from "@/components/modules/users/user-filter-modal";
 import { UserDeleteModal } from "@/components/modules/users/user-delete-modal";
 import { UserReactivateModal } from "@/components/modules/users/user-reactivate-modal";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function UserManagementPage() {
   const router = useRouter();
   const currentUserUuid = useAuthStore((s) => s.user?.uuid);
+  const { can } = usePermissions();
+  const canCreate = can("user_create");
+  const canEdit = can("user_update");
+  const canDelete = can("user_delete");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -101,13 +106,15 @@ export default function UserManagementPage() {
           )}
 
           {/* Add User */}
-          <button
-            onClick={() => router.push("/dashboard/users/add")}
-            className="flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Add User
-          </button>
+          {canCreate && (
+            <button
+              onClick={() => router.push("/dashboard/users/add")}
+              className="flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Add User
+            </button>
+          )}
         </div>
       </div>
 
@@ -128,6 +135,8 @@ export default function UserManagementPage() {
             <UserTable
               users={filteredUsers}
               isLoading={isLoading}
+              canEdit={canEdit}
+              canDelete={canDelete}
               onEdit={(uuid) => router.push(`/dashboard/users/edit?uuid=${uuid}`)}
               onDelete={(uuid) => setDeleteUserUuid(uuid)}
               onReactivate={(uuid) => setReactivateUserUuid(uuid)}

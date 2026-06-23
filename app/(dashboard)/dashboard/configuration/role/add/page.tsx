@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissionGroups } from "@/hooks/usePermissionGroups";
+import { useRequirePermission } from "@/hooks/useRequirePermission";
 import { roleApi } from "@/lib/api/role";
 import { PermissionForm } from "@/components/modules/configuration/permission-form";
 
@@ -12,6 +13,7 @@ const LIST_ROUTE = "/dashboard/configuration/role";
 
 export default function AddPermissionPage() {
   const router = useRouter();
+  const allowed = useRequirePermission("role_create", LIST_ROUTE);
   const { groups, isLoading, error, refetch } = usePermissionGroups();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -33,6 +35,9 @@ export default function AddPermissionPage() {
       setIsSaving(false);
     }
   };
+
+  // Block direct URL access for users without create permission.
+  if (!allowed) return null;
 
   return (
     <div className="space-y-6">

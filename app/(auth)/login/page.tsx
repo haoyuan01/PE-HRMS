@@ -48,6 +48,12 @@ export default function LoginPage() {
         keepLoggedIn,
       });
       setUser(response.data.user);
+      // Mirror the permission codes the server stored in the cookie so gated UI
+      // works immediately after login (before any cold reload / session fetch).
+      const codes = (response.data.user.roles ?? []).flatMap((role) =>
+        (role.permissions ?? []).map((p) => p.code)
+      );
+      useAuthStore.getState().setPermissions(codes);
       router.push(ROUTES.DASHBOARD);
     } catch {
       toast.error("Invalid credentials. Please try again.");

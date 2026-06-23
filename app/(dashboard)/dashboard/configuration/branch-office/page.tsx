@@ -12,9 +12,14 @@ import {
   type BranchFormValues,
 } from "@/components/modules/configuration/branch-form-modal";
 import { BranchDeleteModal } from "@/components/modules/configuration/branch-delete-modal";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { Office } from "@/types/office";
 
 export default function BranchOfficePage() {
+  const { can } = usePermissions();
+  const canCreate = can("office_create");
+  const canEdit = can("office_update");
+  const canDelete = can("office_delete");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -146,13 +151,15 @@ export default function BranchOfficePage() {
         </form>
 
         {/* New Branch */}
-        <button
-          onClick={openCreate}
-          className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          New Branch
-        </button>
+        {canCreate && (
+          <button
+            onClick={openCreate}
+            className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            New Branch
+          </button>
+        )}
       </div>
 
       {/* Table Card */}
@@ -172,6 +179,8 @@ export default function BranchOfficePage() {
             <BranchTable
               offices={offices}
               isLoading={isLoading}
+              canEdit={canEdit}
+              canDelete={canDelete}
               onEdit={openEdit}
               onDelete={openDelete}
             />

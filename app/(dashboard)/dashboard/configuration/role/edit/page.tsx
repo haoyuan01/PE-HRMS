@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissionGroups } from "@/hooks/usePermissionGroups";
+import { useRequirePermission } from "@/hooks/useRequirePermission";
 import { roleApi } from "@/lib/api/role";
 import { PermissionForm } from "@/components/modules/configuration/permission-form";
 import type { Role } from "@/types/auth";
@@ -14,6 +15,7 @@ const LIST_ROUTE = "/dashboard/configuration/role";
 function EditPermissionContent() {
   const uuid = useSearchParams().get("uuid") ?? "";
   const router = useRouter();
+  const allowed = useRequirePermission("role_update", LIST_ROUTE);
   const { groups, isLoading: isLoadingGroups, error: groupsError, refetch } =
     usePermissionGroups();
   const [role, setRole] = useState<Role | null>(null);
@@ -71,6 +73,9 @@ function EditPermissionContent() {
 
   const isLoading = isLoadingGroups || isLoadingRole;
   const error = groupsError ?? roleError;
+
+  // Block direct URL access for users without update permission.
+  if (!allowed) return null;
 
   return (
     <div className="space-y-6">

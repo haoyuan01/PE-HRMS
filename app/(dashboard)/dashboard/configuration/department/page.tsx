@@ -11,9 +11,14 @@ import {
   type DepartmentFormValues,
 } from "@/components/modules/configuration/department-form-modal";
 import { DepartmentDeleteModal } from "@/components/modules/configuration/department-delete-modal";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { Department } from "@/types/department";
 
 export default function DepartmentPage() {
+  const { can } = usePermissions();
+  const canCreate = can("department_create");
+  const canEdit = can("department_update");
+  const canDelete = can("department_delete");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -113,13 +118,15 @@ export default function DepartmentPage() {
         </form>
 
         {/* New Department */}
-        <button
-          onClick={openCreate}
-          className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          New Department
-        </button>
+        {canCreate && (
+          <button
+            onClick={openCreate}
+            className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            New Department
+          </button>
+        )}
       </div>
 
       {/* Table Card */}
@@ -139,6 +146,8 @@ export default function DepartmentPage() {
             <DepartmentTable
               departments={departments}
               isLoading={isLoading}
+              canEdit={canEdit}
+              canDelete={canDelete}
               onEdit={openEdit}
               onDelete={openDelete}
             />
