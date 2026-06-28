@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { Camera, Pencil } from "lucide-react";
+import axios from "axios";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,10 @@ const schema = z.object({
   full_name: z.string().min(1, "Full name is required"),
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
+  personal_email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Invalid email address"),
   gender: z.string(),
   is_married: z.string(),
   identity_number: z.string(),
@@ -66,6 +71,7 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
       full_name: "",
       first_name: "",
       last_name: "",
+      personal_email: "",
       gender: "",
       is_married: "",
       identity_number: "",
@@ -82,6 +88,7 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
         full_name: personal?.full_name ?? "",
         first_name: personal?.first_name ?? "",
         last_name: personal?.last_name ?? "",
+        personal_email: profile.email ?? "",
         gender: personal?.gender === true ? "male" : personal?.gender === false ? "female" : "",
         is_married: personal?.is_married === true ? "married" : personal?.is_married === false ? "single" : "",
         identity_number: personal?.identity_number ?? "",
@@ -106,10 +113,32 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
         is_married: data.is_married === "married" ? true : data.is_married === "single" ? false : null,
         image: imageFile || undefined,
       });
+
+      // The personal email is the user's login email, which lives on the user
+      // record. Update it only when it changed (the endpoint also requires the
+      // current role_uuid; sending no employment[...] keys leaves employment
+      // untouched).
+      if (data.personal_email !== profile.email) {
+        await userApi.updateUser(profile.uuid, {
+          email: data.personal_email,
+          role_uuid: profile.roles?.[0]?.uuid ?? null,
+        });
+      }
+
       toast.success("Personal information updated successfully.");
       onSaved();
-    } catch {
-      toast.error("Failed to update personal information.");
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: unknown } | undefined)?.message
+        : undefined;
+      // Validation errors come back as { field: [msg] }; show the first.
+      const text =
+        message && typeof message === "object"
+          ? String(Object.values(message as Record<string, string[]>)[0]?.[0] ?? "")
+          : typeof message === "string"
+            ? message
+            : "";
+      toast.error(text || "Failed to update personal information.");
     }
   };
 
@@ -213,6 +242,20 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
           {errors.last_name && (
             <p className="text-xs text-ds-error">{errors.last_name.message}</p>
           )}
+        </div>
+
+        {/* Personal Email */}
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="personal_email" className={FIELD_LABEL}>
+            Personal Email
+          </Label>
+          <Input
+            id="personal_email"
+            type="email"
+            placeholder="personal@example.com"
+            className={FIELD_INPUT}
+            {...register("personal_email")}
+          />
         </div>
 
         {/* Gender */}

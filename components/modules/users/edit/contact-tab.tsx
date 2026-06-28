@@ -37,7 +37,6 @@ const COUNTRIES = [
 
 const schema = z.object({
   phone_number: z.string(),
-  personal_email: z.string(),
   company_email: z.string(),
   address_1: z.string(),
   address_2: z.string(),
@@ -62,7 +61,6 @@ export function ContactTab({ profile, onSaved }: ContactTabProps) {
     resolver: zodResolver(schema),
     defaultValues: {
       phone_number: "",
-      personal_email: "",
       company_email: "",
       address_1: "",
       address_2: "",
@@ -78,7 +76,6 @@ export function ContactTab({ profile, onSaved }: ContactTabProps) {
     if (profile) {
       reset({
         phone_number: contact?.phone_number ?? "",
-        personal_email: profile.email ?? "",
         company_email: contact?.company_email ?? "",
         address_1: contact?.address_1 ?? "",
         address_2: contact?.address_2 ?? "",
@@ -126,22 +123,8 @@ export function ContactTab({ profile, onSaved }: ContactTabProps) {
         />
       </div>
 
-      {/* Personal Email */}
-      <div className="space-y-2">
-        <Label htmlFor="personal_email" className={FIELD_LABEL}>
-          Personal Email
-        </Label>
-        <Input
-          id="personal_email"
-          type="email"
-          placeholder="personal@example.com"
-          className={FIELD_INPUT}
-          {...register("personal_email")}
-        />
-      </div>
-
       {/* Company Email */}
-      <div className="space-y-2 md:col-span-2">
+      <div className="space-y-2">
         <Label htmlFor="company_email" className={FIELD_LABEL}>
           Company Email
         </Label>
