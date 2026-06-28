@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -34,6 +35,8 @@ const schema = z.object({
   office_branch: z.string(),
   department: z.string(),
   joined_date: z.string(),
+  is_manager: z.boolean(),
+  is_accountant: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -68,6 +71,8 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
       office_branch: "",
       department: "",
       joined_date: "",
+      is_manager: false,
+      is_accountant: false,
     },
   });
 
@@ -79,20 +84,27 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
         office_branch: employment?.office?.uuid ?? "",
         department: employment?.department?.uuid ?? "",
         joined_date: employment?.joined_date?.split("T")[0] ?? "",
+        is_manager: employment?.is_manager ?? false,
+        is_accountant: employment?.is_accountant ?? false,
       });
     }
   }, [profile, employment, roles, positions, offices, departments, reset]);
 
   const onSubmit = async (data: FormValues) => {
     try {
-      // Employment fields and the user's role live on different endpoints:
-      // employment -> /user-employments, role_uuid -> /users/{uuid}.
+      // All employment fields (including the manager/accountant flags) go
+      // through /user-employments in a single write — the update-user endpoint
+      // resets the employment relations, so the flags must NOT be sent there.
+      // role_uuid lives on the user record (/users/{uuid}); sending it without
+      // any employment[...] keys leaves employment untouched.
       await Promise.all([
         userApi.updateEmployment(profile.uuid, {
           position_uuid: data.position || null,
           department_uuid: data.department || null,
           office_uuid: data.office_branch || null,
           joined_date: data.joined_date || null,
+          is_manager: data.is_manager,
+          is_accountant: data.is_accountant,
         }),
         ...(data.role && data.role !== (profile.roles?.[0]?.uuid ?? "")
           ? [
@@ -242,6 +254,50 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
           type="date"
           className={FIELD_INPUT}
           {...register("joined_date")}
+        />
+      </div>
+
+      {/* Roles: Manager / Accountant */}
+      <div className="flex flex-col gap-4 md:col-span-2 sm:flex-row sm:gap-16">
+        <Controller
+          name="is_manager"
+          control={control}
+          render={({ field }) => (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="is_manager"
+                checked={field.value}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+                className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
+              />
+              <label
+                htmlFor="is_manager"
+                className="cursor-pointer select-none text-sm text-on-surface"
+              >
+                Is Manager
+              </label>
+            </div>
+          )}
+        />
+        <Controller
+          name="is_accountant"
+          control={control}
+          render={({ field }) => (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="is_accountant"
+                checked={field.value}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+                className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
+              />
+              <label
+                htmlFor="is_accountant"
+                className="cursor-pointer select-none text-sm text-on-surface"
+              >
+                Is Accountant
+              </label>
+            </div>
+          )}
         />
       </div>
     </form>

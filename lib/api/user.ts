@@ -93,6 +93,8 @@ export const userApi = {
       position_uuid?: string | null;
       office_uuid?: string | null;
       joined_date?: string | null;
+      is_manager?: boolean;
+      is_accountant?: boolean;
     }
   ): Promise<UserProfileResponse> => {
     const response = await apiClient.put<UserProfileResponse>(
@@ -169,6 +171,8 @@ export const userApi = {
       department_uuid?: string;
       office_uuid?: string;
       joined_date?: string;
+      is_manager?: boolean;
+      is_accountant?: boolean;
     };
     emergency?: {
       name?: string;
@@ -215,6 +219,8 @@ export const userApi = {
       if (emp.department_uuid) formData.append("employment[department_uuid]", emp.department_uuid);
       if (emp.office_uuid) formData.append("employment[office_uuid]", emp.office_uuid);
       if (emp.joined_date) formData.append("employment[joined_date]", emp.joined_date);
+      if (emp.is_manager != null) formData.append("employment[is_manager]", emp.is_manager ? "1" : "0");
+      if (emp.is_accountant != null) formData.append("employment[is_accountant]", emp.is_accountant ? "1" : "0");
     }
 
     if (data.emergency) {

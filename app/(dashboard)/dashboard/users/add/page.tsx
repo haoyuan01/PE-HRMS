@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -91,6 +92,8 @@ const schema = z.object({
   office_branch: z.string().min(1, "Office branch is required"),
   position: z.string().min(1, "Position is required"),
   joined_date: z.string().min(1, "Date of joined is required"),
+  is_manager: z.boolean(),
+  is_accountant: z.boolean(),
   emergency_name: z.string(),
   emergency_phone: z.string(),
   emergency_relationship: z.string(),
@@ -191,6 +194,8 @@ export default function AddUserPage() {
       office_branch: "",
       position: "",
       joined_date: "",
+      is_manager: false,
+      is_accountant: false,
       emergency_name: "",
       emergency_phone: "",
       emergency_relationship: "",
@@ -233,6 +238,8 @@ export default function AddUserPage() {
           department_uuid: data.department || undefined,
           office_uuid: data.office_branch || undefined,
           joined_date: data.joined_date || undefined,
+          is_manager: data.is_manager,
+          is_accountant: data.is_accountant,
         },
         emergency: {
           name: data.emergency_name || undefined,
@@ -900,6 +907,50 @@ export default function AddUserPage() {
                   {errors.joined_date && (
                     <p className="text-xs text-ds-error">{errors.joined_date.message}</p>
                   )}
+                </div>
+
+                {/* Roles: Manager / Accountant */}
+                <div className="flex flex-col gap-4 md:col-span-2 sm:flex-row sm:gap-16">
+                  <Controller
+                    name="is_manager"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="is_manager"
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                          className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
+                        />
+                        <label
+                          htmlFor="is_manager"
+                          className="cursor-pointer select-none text-sm text-on-surface"
+                        >
+                          Is Manager
+                        </label>
+                      </div>
+                    )}
+                  />
+                  <Controller
+                    name="is_accountant"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="is_accountant"
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                          className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
+                        />
+                        <label
+                          htmlFor="is_accountant"
+                          className="cursor-pointer select-none text-sm text-on-surface"
+                        >
+                          Is Accountant
+                        </label>
+                      </div>
+                    )}
+                  />
                 </div>
               </div>
             </section>

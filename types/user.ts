@@ -57,6 +57,8 @@ export interface Office extends NamedEntity {
 export interface Employment extends AuditFields {
   uuid: string;
   joined_date: string | null;
+  is_manager: boolean | null;
+  is_accountant: boolean | null;
   position: NamedEntity | null;
   department: NamedEntity | null;
   office: Office | null;

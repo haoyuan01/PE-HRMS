@@ -6,6 +6,7 @@ import {
   flexRender,
   type ColumnDef,
 } from "@tanstack/react-table";
+import { useState } from "react";
 import { Pencil, Trash2, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import type { UserProfile } from "@/types/user";
@@ -20,17 +21,19 @@ function UserAvatar({
   const imagePath = user.personal?.image_path;
   const initials =
     (firstName?.[0] ?? "") + (lastName?.[0] ?? "") || user.email[0].toUpperCase();
+  const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <div className="flex items-center gap-3">
       <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-surface-container-high">
-        {imagePath ? (
+        {imagePath && !imageFailed ? (
           <Image
             src={imagePath}
             alt={`${firstName ?? ""} ${lastName ?? ""}`}
             fill
             className="object-cover"
             sizes="32px"
+            onError={() => setImageFailed(true)}
           />
         ) : (
           <span className="flex h-full w-full items-center justify-center text-xs font-medium text-on-surface-variant">
