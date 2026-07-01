@@ -41,7 +41,7 @@ function UserAvatar({
           </span>
         )}
       </div>
-      <span className="font-medium text-on-surface">
+      <span className="text-sm font-medium text-on-surface antialiased">
         {user.personal?.full_name ??
           ([firstName, lastName].filter(Boolean).join(" ") ||
           user.email.split("@")[0])}

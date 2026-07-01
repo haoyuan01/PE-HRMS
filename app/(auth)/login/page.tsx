@@ -54,6 +54,12 @@ export default function LoginPage() {
         (role.permissions ?? []).map((p) => p.code)
       );
       useAuthStore.getState().setPermissions(codes);
+      // Mirror the employment manager/accountant flags too.
+      const employment = response.data.user.employment;
+      useAuthStore.getState().setEmploymentFlags({
+        isManager: employment?.is_manager === true,
+        isAccountant: employment?.is_accountant === true,
+      });
       router.push(ROUTES.DASHBOARD);
     } catch {
       toast.error("Invalid credentials. Please try again.");

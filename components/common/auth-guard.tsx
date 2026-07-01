@@ -31,6 +31,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           if (session.permissions) {
             useAuthStore.getState().setPermissions(session.permissions);
           }
+          useAuthStore.getState().setEmploymentFlags({
+            isManager: session.isManager === true,
+            isAccountant: session.isAccountant === true,
+          });
         } else {
           clearAuth();
           router.replace(ROUTES.LOGIN);

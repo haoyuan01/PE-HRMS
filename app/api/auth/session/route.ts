@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { AUTH_COOKIE_NAME, USER_UUID_COOKIE_NAME, PERMISSIONS_COOKIE_NAME } from "@/lib/constants";
+import { AUTH_COOKIE_NAME, USER_UUID_COOKIE_NAME, PERMISSIONS_COOKIE_NAME, EMPLOYMENT_COOKIE_NAME } from "@/lib/constants";
 import { loggedFetch } from "@/lib/server-fetch";
 
 export async function GET() {
@@ -25,6 +25,20 @@ export async function GET() {
     }
   }
 
+  // Read the employment manager/accountant flags from cookie (defaults)
+  let isManager = false;
+  let isAccountant = false;
+  const empCookie = cookieStore.get(EMPLOYMENT_COOKIE_NAME)?.value;
+  if (empCookie) {
+    try {
+      const parsed = JSON.parse(empCookie);
+      isManager = parsed.is_manager === true;
+      isAccountant = parsed.is_accountant === true;
+    } catch {
+      // Ignore malformed cookie
+    }
+  }
+
   // Read user UUID from cookie and fetch full user data
   const uuid = cookieStore.get(USER_UUID_COOKIE_NAME)?.value;
 
@@ -44,10 +58,18 @@ export async function GET() {
 
       if (apiRes.ok) {
         const data = await apiRes.json();
+        // Prefer the freshly fetched employment flags when present.
+        const employment = data.data?.employment;
+        if (employment) {
+          isManager = employment.is_manager === true;
+          isAccountant = employment.is_accountant === true;
+        }
         return NextResponse.json({
           authenticated: true,
           user: data.data,
           permissions,
+          isManager,
+          isAccountant,
         });
       }
     } catch {
@@ -55,5 +77,5 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ authenticated: true, permissions });
+  return NextResponse.json({ authenticated: true, permissions, isManager, isAccountant });
 }

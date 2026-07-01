@@ -51,7 +51,7 @@ const navItems: NavItem[] = [
     href: "/dashboard/requests",
     icon: FileText,
     children: [
-      { label: "Expenses Claim Form", href: "/dashboard/requests/expenses" },
+      { label: "Expenses Claim Form", href: "/dashboard/requests/expenses", permission: "claim_header_read" },
       { label: "Leave Form", href: "/dashboard/requests/leave" },
       { label: "Overtime Form", href: "/dashboard/requests/overtime" },
     ],
