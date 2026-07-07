@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Info, ReceiptText, FileText, Loader2, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import axios from "axios";
@@ -108,9 +108,9 @@ function ReviewActions({
   );
 }
 
-export default function ClaimDetailPage() {
+function ClaimDetailContent() {
   const router = useRouter();
-  const uuid = useParams().uuid as string;
+  const uuid = useSearchParams().get("uuid") ?? "";
   const isManager = useAuthStore((s) => s.isManager);
   const isDirector = useAuthStore((s) => s.isDirector);
   const isApprover = useAuthStore((s) => s.isManager || s.isAccountant);
@@ -386,5 +386,14 @@ export default function ClaimDetailPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ClaimDetailPage() {
+  // useSearchParams() must be inside a Suspense boundary.
+  return (
+    <Suspense>
+      <ClaimDetailContent />
+    </Suspense>
   );
 }

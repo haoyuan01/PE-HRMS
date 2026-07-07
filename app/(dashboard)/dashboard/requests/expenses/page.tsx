@@ -167,7 +167,7 @@ export default function ExpensesClaimFormPage() {
               claims={visibleClaims}
               isLoading={isLoading}
               onView={(uuid) =>
-                router.push(`/dashboard/requests/expenses/${uuid}`)
+                router.push(`/dashboard/requests/expenses/detail?uuid=${uuid}`)
               }
             />
             {pagination && pagination.total > 0 && (
