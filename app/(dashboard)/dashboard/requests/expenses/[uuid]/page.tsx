@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Info, ReceiptText, FileText, Loader2, Check, X } from "lucide-react";
 import { format } from "date-fns";
+import axios from "axios";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { claimApi } from "@/lib/api/claim";
@@ -16,13 +17,24 @@ const FIELD_BOX =
 
 const LIST_ROUTE = "/dashboard/requests/expenses";
 
-function headerStatus(claim: ClaimHeader) {
+function headerStatus(
+  claim: ClaimHeader,
+  review: { managerReviewed: boolean; directorReviewed: boolean }
+) {
   if (claim.rejected_at)
     return { label: "Rejected", className: "bg-ds-error/10 text-ds-error" };
   if (claim.paid_at)
     return { label: "Paid", className: "bg-emerald-500/10 text-emerald-600" };
   if (claim.approved_at)
     return { label: "Approved", className: "bg-ds-primary/10 text-ds-primary" };
+  // Manager has reviewed but the General Manager (director) hasn't yet.
+  if (review.managerReviewed && !review.directorReviewed)
+    return {
+      label: "Pending General Manager Review",
+      className: "bg-sky-500/10 text-sky-600",
+    };
+  if (review.managerReviewed && review.directorReviewed)
+    return { label: "Reviewed", className: "bg-sky-500/10 text-sky-600" };
   return { label: "Pending Review", className: "bg-amber-500/10 text-amber-600" };
 }
 
@@ -41,34 +53,145 @@ function fileName(path: string) {
   return path.split("/").pop() ?? path;
 }
 
+// Per-item outcome badge, shared by the manager and director review flows.
+function ReviewOutcome({ approved }: { approved: boolean }) {
+  return (
+    <div className="mt-4 flex justify-end">
+      {approved ? (
+        <span className="inline-flex rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-emerald-600">
+          Approved
+        </span>
+      ) : (
+        <span className="inline-flex rounded-full bg-ds-error/10 px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-ds-error">
+          Rejected
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Approve/Reject buttons, shared by the manager and director review flows.
+function ReviewActions({
+  onReject,
+  onApprove,
+  disabled,
+  showApprove = true,
+}: {
+  onReject: () => void;
+  onApprove: () => void;
+  disabled: boolean;
+  showApprove?: boolean;
+}) {
+  return (
+    <div className="mt-4 flex items-center justify-end gap-3">
+      <button
+        type="button"
+        onClick={onReject}
+        disabled={disabled}
+        className="flex items-center gap-2 rounded-lg border border-ds-error/30 px-4 py-2 text-sm font-medium text-ds-error transition-colors hover:bg-ds-error/10 disabled:opacity-50"
+      >
+        <X className="h-4 w-4" />
+        Reject
+      </button>
+      {showApprove && (
+        <button
+          type="button"
+          onClick={onApprove}
+          disabled={disabled}
+          className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          <Check className="h-4 w-4" />
+          Approve
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ClaimDetailPage() {
   const router = useRouter();
   const uuid = useParams().uuid as string;
+  const isManager = useAuthStore((s) => s.isManager);
+  const isDirector = useAuthStore((s) => s.isDirector);
   const isApprover = useAuthStore((s) => s.isManager || s.isAccountant);
+  const currentUserUuid = useAuthStore((s) => s.user?.uuid);
 
   const [claim, setClaim] = useState<ClaimHeader | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [processingItem, setProcessingItem] = useState<string | null>(null);
+  const [isReleasing, setIsReleasing] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    claimApi
-      .getClaimHeader(uuid)
-      .then((data) => {
-        if (active) setClaim(data);
-      })
-      .catch(() => {
-        if (active) setError("Failed to load claim.");
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+  const loadClaim = useCallback(async () => {
+    try {
+      setClaim(await claimApi.getClaimHeader(uuid));
+      setError(null);
+    } catch {
+      setError("Failed to load claim.");
+    } finally {
+      setIsLoading(false);
+    }
   }, [uuid]);
 
-  const status = claim ? headerStatus(claim) : null;
+  useEffect(() => {
+    loadClaim();
+  }, [loadClaim]);
+
+  // Shared approve/reject handler — the manager and director flows differ only
+  // by which API call is passed in.
+  const reviewItem = async (
+    itemUuid: string,
+    approve: boolean,
+    apiCall: (uuid: string) => Promise<void>
+  ) => {
+    setProcessingItem(itemUuid);
+    try {
+      await apiCall(itemUuid);
+      toast.success(approve ? "Expense item approved." : "Expense item rejected.");
+      await loadClaim();
+    } catch {
+      toast.error(
+        `Failed to ${approve ? "approve" : "reject"} item. Please try again.`
+      );
+    } finally {
+      setProcessingItem(null);
+    }
+  };
+
+  // Header-level "Reviewed" action — the manager and director flows differ only
+  // by which API call is passed in.
+  const submitReview = async (apiCall: (uuid: string) => Promise<void>) => {
+    if (!claim) return;
+    setIsReleasing(true);
+    try {
+      await apiCall(claim.uuid);
+      toast.success("Claim reviewed successfully.");
+      await loadClaim();
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.message ?? err.message
+        : "Failed to submit review. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsReleasing(false);
+    }
+  };
+
+  // A manager who has already reviewed this claim no longer sees the Reviewed
+  // button; the status then reflects whether the General Manager (director) has
+  // also signed off.
+  const managerReviewed = !!claim?.manager_reviewed_by;
+  const directorReviewed = !!claim?.director_reviewed_by;
+  const status = claim
+    ? headerStatus(claim, { managerReviewed, directorReviewed })
+    : null;
+  // You can't review your own claim (e.g. opened from My List) — hide all
+  // review actions in that case.
+  const isOwnClaim = claim?.user?.uuid === currentUserUuid;
+  const canReview = isApprover && !isOwnClaim;
+  const canApprove = isManager && !isOwnClaim;
+  // Directors (General Managers) review items with their own approve/reject.
+  const canDirectorReview = isDirector && !isOwnClaim;
 
   return (
     <div className="space-y-6">
@@ -196,41 +319,67 @@ export default function ClaimDetailPage() {
                     )}
                   </div>
 
-                  {/* Per-item review actions (approvers only) */}
-                  {isApprover && (
-                    <div className="mt-4 flex items-center justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={() => toast.info("Rejecting an item is coming soon.")}
-                        className="flex items-center gap-2 rounded-lg border border-ds-error/30 px-4 py-2 text-sm font-medium text-ds-error transition-colors hover:bg-ds-error/10"
-                      >
-                        <X className="h-4 w-4" />
-                        Reject
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toast.info("Approving an item is coming soon.")}
-                        className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                      >
-                        <Check className="h-4 w-4" />
-                        Approve
-                      </button>
-                    </div>
+                  {/* Per-item status / review actions. Directors review with the
+                      director_* fields; everyone else with the manager_* fields.
+                      Once that reviewer has acted (…_action_at set), hide the
+                      buttons and show the outcome instead. */}
+                  {isDirector ? (
+                    item.director_action_at ? (
+                      <ReviewOutcome approved={item.director_approved} />
+                    ) : (
+                      canDirectorReview && (
+                        <ReviewActions
+                          disabled={processingItem === item.uuid}
+                          onReject={() =>
+                            reviewItem(item.uuid, false, claimApi.directorRejectClaimItem)
+                          }
+                          onApprove={() =>
+                            reviewItem(item.uuid, true, claimApi.directorApproveClaimItem)
+                          }
+                        />
+                      )
+                    )
+                  ) : item.manager_action_at ? (
+                    <ReviewOutcome approved={item.manager_approved} />
+                  ) : (
+                    canReview && (
+                      <ReviewActions
+                        disabled={processingItem === item.uuid}
+                        showApprove={canApprove}
+                        onReject={() =>
+                          reviewItem(item.uuid, false, claimApi.rejectClaimItem)
+                        }
+                        onApprove={() =>
+                          reviewItem(item.uuid, true, claimApi.approveClaimItem)
+                        }
+                      />
+                    )
                   )}
                 </div>
               ))}
             </div>
           </section>
 
-          {/* Footer action */}
-          {isApprover && (
+          {/* Footer action — header-level review, hidden once that role has
+              reviewed. Directors use their own endpoint; everyone else the
+              manager one. */}
+          {(isDirector
+            ? canDirectorReview && !directorReviewed
+            : canApprove && !managerReviewed) && (
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => toast.info("Marking as reviewed is coming soon.")}
-                className="rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-6 py-3 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+                onClick={() =>
+                  submitReview(
+                    isDirector
+                      ? claimApi.directorReviewClaim
+                      : claimApi.managerReviewClaim
+                  )
+                }
+                disabled={isReleasing}
+                className="rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-6 py-3 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                Reviewed
+                {isReleasing ? "Submitting..." : "Reviewed"}
               </button>
             </div>
           )}

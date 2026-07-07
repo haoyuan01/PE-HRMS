@@ -11,12 +11,10 @@ import Image from "next/image";
 import type { ClaimHeader } from "@/types/claim";
 
 function claimStatus(claim: ClaimHeader) {
-  if (claim.rejected_at)
-    return { label: "Rejected", className: "bg-ds-error/10 text-ds-error" };
-  if (claim.paid_at)
-    return { label: "Paid", className: "bg-emerald-500/10 text-emerald-600" };
-  if (claim.approved_at)
-    return { label: "Approved", className: "bg-ds-primary/10 text-ds-primary" };
+  // Only two states in the list: Reviewed once the director (General Manager)
+  // has signed off, otherwise Pending.
+  if (claim.director_reviewed_by)
+    return { label: "Reviewed", className: "bg-sky-500/10 text-sky-600" };
   return { label: "Pending", className: "bg-amber-500/10 text-amber-600" };
 }
 

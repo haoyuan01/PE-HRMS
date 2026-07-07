@@ -59,6 +59,7 @@ export default function LoginPage() {
       useAuthStore.getState().setEmploymentFlags({
         isManager: employment?.is_manager === true,
         isAccountant: employment?.is_accountant === true,
+        isDirector: employment?.is_director === true,
       });
       router.push(ROUTES.DASHBOARD);
     } catch {

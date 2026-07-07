@@ -8,12 +8,15 @@ export interface ClaimItem {
   attachment_path: string | null;
   remark: string | null;
   is_active: boolean;
-  approved_by: string | null;
-  approved_at: string | null;
-  released_by: string | null;
-  released_at: string | null;
-  rejected_by: string | null;
-  rejected_at: string | null;
+  // Manager review — `manager_action_at` is null until the manager acts;
+  // `manager_approved` then distinguishes approve (true) from reject (false).
+  manager_action_by: UserProfile | null;
+  manager_action_at: string | null;
+  manager_approved: boolean;
+  // Director review — same shape as the manager fields.
+  director_action_by: UserProfile | null;
+  director_action_at: string | null;
+  director_approved: boolean;
 }
 
 export interface ClaimHeader {
@@ -33,5 +36,8 @@ export interface ClaimHeader {
   updated_at: string;
   user: UserProfile | null;
   manager_approver: UserProfile | null;
+  // Header-level review sign-off — null until that role reviews the claim.
+  manager_reviewed_by: UserProfile | null;
+  director_reviewed_by: UserProfile | null;
   claim_items: ClaimItem[];
 }

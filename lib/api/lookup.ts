@@ -45,5 +45,5 @@ export const lookupApi = {
   getPositions: (): Promise<LookupItem[]> => cachedGet("positions", "/lookup/positions"),
   getRoles: (): Promise<LookupItem[]> => cachedGet("roles", "/lookup/roles"),
   getClaimApprovers: (): Promise<LookupItem[]> =>
-    cachedGet("claimApprovers", "/lookup/claim-approvers"),
+    cachedGet("claimApprovers", "/lookup/manager-approvers?search_words[]="),
 };

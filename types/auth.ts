@@ -34,6 +34,7 @@ export interface User {
   employment?: {
     is_manager?: boolean | null;
     is_accountant?: boolean | null;
+    is_director?: boolean | null;
     [key: string]: unknown;
   } | null;
   roles: Role[];
@@ -59,6 +60,7 @@ export interface SessionResponse {
   permissions?: string[];
   isManager?: boolean;
   isAccountant?: boolean;
+  isDirector?: boolean;
 }
 
 export interface AuthState {
@@ -66,6 +68,7 @@ export interface AuthState {
   permissions: string[];
   isManager: boolean;
   isAccountant: boolean;
+  isDirector: boolean;
   isAuthenticated: boolean;
   hasHydrated: boolean;
   setUser: (user: User) => void;
@@ -73,6 +76,7 @@ export interface AuthState {
   setEmploymentFlags: (flags: {
     isManager: boolean;
     isAccountant: boolean;
+    isDirector: boolean;
   }) => void;
   clearAuth: () => void;
   setHasHydrated: (state: boolean) => void;

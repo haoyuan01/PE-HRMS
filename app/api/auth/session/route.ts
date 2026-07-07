@@ -28,12 +28,14 @@ export async function GET() {
   // Read the employment manager/accountant flags from cookie (defaults)
   let isManager = false;
   let isAccountant = false;
+  let isDirector = false;
   const empCookie = cookieStore.get(EMPLOYMENT_COOKIE_NAME)?.value;
   if (empCookie) {
     try {
       const parsed = JSON.parse(empCookie);
       isManager = parsed.is_manager === true;
       isAccountant = parsed.is_accountant === true;
+      isDirector = parsed.is_director === true;
     } catch {
       // Ignore malformed cookie
     }
@@ -63,6 +65,7 @@ export async function GET() {
         if (employment) {
           isManager = employment.is_manager === true;
           isAccountant = employment.is_accountant === true;
+          isDirector = employment.is_director === true;
         }
         return NextResponse.json({
           authenticated: true,
@@ -70,6 +73,7 @@ export async function GET() {
           permissions,
           isManager,
           isAccountant,
+          isDirector,
         });
       }
     } catch {
@@ -77,5 +81,5 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ authenticated: true, permissions, isManager, isAccountant });
+  return NextResponse.json({ authenticated: true, permissions, isManager, isAccountant, isDirector });
 }

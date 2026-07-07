@@ -59,6 +59,7 @@ export interface Employment extends AuditFields {
   joined_date: string | null;
   is_manager: boolean | null;
   is_accountant: boolean | null;
+  is_director: boolean | null;
   position: NamedEntity | null;
   department: NamedEntity | null;
   office: Office | null;

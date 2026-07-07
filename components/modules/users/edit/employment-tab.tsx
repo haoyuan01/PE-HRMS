@@ -37,6 +37,7 @@ const schema = z.object({
   joined_date: z.string(),
   is_manager: z.boolean(),
   is_accountant: z.boolean(),
+  is_director: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -73,6 +74,7 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
       joined_date: "",
       is_manager: false,
       is_accountant: false,
+      is_director: false,
     },
   });
 
@@ -86,35 +88,31 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
         joined_date: employment?.joined_date?.split("T")[0] ?? "",
         is_manager: employment?.is_manager ?? false,
         is_accountant: employment?.is_accountant ?? false,
+        is_director: employment?.is_director ?? false,
       });
     }
   }, [profile, employment, roles, positions, offices, departments, reset]);
 
   const onSubmit = async (data: FormValues) => {
     try {
-      // All employment fields (including the manager/accountant flags) go
-      // through /user-employments in a single write — the update-user endpoint
-      // resets the employment relations, so the flags must NOT be sent there.
-      // role_uuid lives on the user record (/users/{uuid}); sending it without
-      // any employment[...] keys leaves employment untouched.
-      await Promise.all([
-        userApi.updateEmployment(profile.uuid, {
+      // Everything on this tab is saved in a single write to /users/{uuid}
+      // (PUT via _method): role/email plus the full employment section. The
+      // dedicated /user-employments endpoint does NOT persist the manager/
+      // accountant/director flags, so the employment payload has to go through
+      // the user-update endpoint (same one create user uses).
+      await userApi.updateUser(profile.uuid, {
+        email: profile.email,
+        role_uuid: data.role || (profile.roles?.[0]?.uuid ?? null),
+        employment: {
           position_uuid: data.position || null,
           department_uuid: data.department || null,
           office_uuid: data.office_branch || null,
           joined_date: data.joined_date || null,
           is_manager: data.is_manager,
           is_accountant: data.is_accountant,
-        }),
-        ...(data.role && data.role !== (profile.roles?.[0]?.uuid ?? "")
-          ? [
-              userApi.updateUser(profile.uuid, {
-                email: profile.email,
-                role_uuid: data.role,
-              }),
-            ]
-          : []),
-      ]);
+          is_director: data.is_director,
+        },
+      });
       toast.success("Employment information updated successfully.");
       onSaved();
     } catch {
@@ -295,6 +293,26 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
                 className="cursor-pointer select-none text-sm text-on-surface"
               >
                 Is Accountant
+              </label>
+            </div>
+          )}
+        />
+        <Controller
+          name="is_director"
+          control={control}
+          render={({ field }) => (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="is_director"
+                checked={field.value}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+                className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
+              />
+              <label
+                htmlFor="is_director"
+                className="cursor-pointer select-none text-sm text-on-surface"
+              >
+                Is General Manager
               </label>
             </div>
           )}

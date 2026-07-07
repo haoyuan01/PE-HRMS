@@ -8,6 +8,9 @@ import type { Pagination } from "@/types/user";
 interface UseClaimHeadersParams {
   page?: number;
   user_uuid?: string;
+  manager_approver_uuid?: string;
+  is_director?: boolean;
+  name?: string;
 }
 
 export function useClaimHeaders(params: UseClaimHeadersParams = {}) {
@@ -29,7 +32,13 @@ export function useClaimHeaders(params: UseClaimHeadersParams = {}) {
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.page, params.user_uuid]);
+  }, [
+    params.page,
+    params.user_uuid,
+    params.manager_approver_uuid,
+    params.is_director,
+    params.name,
+  ]);
 
   useEffect(() => {
     fetch();

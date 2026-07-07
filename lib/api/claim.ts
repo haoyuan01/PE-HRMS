@@ -62,12 +62,58 @@ export const claimApi = {
     return response.data.data;
   },
 
+  // Manager approval/rejection share one endpoint — the `approve` boolean
+  // decides the outcome.
+  approveClaimItem: async (itemUuid: string): Promise<void> => {
+    await apiClient.patch(`/claim-items/manager-approves/${itemUuid}`, {
+      approve: true,
+    });
+  },
+
+  rejectClaimItem: async (itemUuid: string): Promise<void> => {
+    await apiClient.patch(`/claim-items/manager-approves/${itemUuid}`, {
+      approve: false,
+    });
+  },
+
+  // Director (General Manager) approval/rejection — mirrors the manager
+  // endpoint, keyed by the `approve` boolean.
+  directorApproveClaimItem: async (itemUuid: string): Promise<void> => {
+    await apiClient.patch(`/claim-items/director-approves/${itemUuid}`, {
+      approve: true,
+    });
+  },
+
+  directorRejectClaimItem: async (itemUuid: string): Promise<void> => {
+    await apiClient.patch(`/claim-items/director-approves/${itemUuid}`, {
+      approve: false,
+    });
+  },
+
+  // Manager "Reviewed" action — a single header-level call that finalises the
+  // manager's review of the whole claim (no body).
+  managerReviewClaim: async (uuid: string): Promise<void> => {
+    await apiClient.patch(`/claim-headers/manager-reviews/${uuid}`);
+  },
+
+  // Director (General Manager) "Reviewed" action — header-level, no body.
+  directorReviewClaim: async (uuid: string): Promise<void> => {
+    await apiClient.patch(`/claim-headers/director-reviews/${uuid}`);
+  },
+
   getClaimHeaders: async (params?: {
     page?: number;
     user_uuid?: string;
+    manager_approver_uuid?: string;
+    is_director?: boolean;
+    name?: string;
   }): Promise<ClaimHeaderListResponse> => {
     const query: Record<string, unknown> = { page: params?.page ?? 1 };
     if (params?.user_uuid) query.user_uuid = params.user_uuid;
+    if (params?.manager_approver_uuid)
+      query.manager_approver_uuid = params.manager_approver_uuid;
+    if (params?.is_director) query.is_director = 1;
+    if (params?.name) query.name = params.name;
 
     const response = await apiClient.get<ClaimHeaderListResponse>(
       "/claim-headers",

@@ -94,6 +94,7 @@ const schema = z.object({
   joined_date: z.string().min(1, "Date of joined is required"),
   is_manager: z.boolean(),
   is_accountant: z.boolean(),
+  is_director: z.boolean(),
   emergency_name: z.string(),
   emergency_phone: z.string(),
   emergency_relationship: z.string(),
@@ -196,6 +197,7 @@ export default function AddUserPage() {
       joined_date: "",
       is_manager: false,
       is_accountant: false,
+      is_director: false,
       emergency_name: "",
       emergency_phone: "",
       emergency_relationship: "",
@@ -240,6 +242,7 @@ export default function AddUserPage() {
           joined_date: data.joined_date || undefined,
           is_manager: data.is_manager,
           is_accountant: data.is_accountant,
+          is_director: data.is_director,
         },
         emergency: {
           name: data.emergency_name || undefined,
@@ -947,6 +950,26 @@ export default function AddUserPage() {
                           className="cursor-pointer select-none text-sm text-on-surface"
                         >
                           Is Accountant
+                        </label>
+                      </div>
+                    )}
+                  />
+                  <Controller
+                    name="is_director"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="is_director"
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(checked === true)}
+                          className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
+                        />
+                        <label
+                          htmlFor="is_director"
+                          className="cursor-pointer select-none text-sm text-on-surface"
+                        >
+                          Is General Manager
                         </label>
                       </div>
                     )}

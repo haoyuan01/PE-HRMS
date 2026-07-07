@@ -86,6 +86,10 @@ export const userApi = {
     return response.data;
   },
 
+  // Updates only the employment relations (position/department/office/joined).
+  // The manager/accountant/director flags are NOT persisted here — they must go
+  // through updateUser (PUT /users/{uuid}), which is why the edit form sends the
+  // full employment payload there instead.
   updateEmployment: async (
     userUuid: string,
     data: {
@@ -93,8 +97,6 @@ export const userApi = {
       position_uuid?: string | null;
       office_uuid?: string | null;
       joined_date?: string | null;
-      is_manager?: boolean;
-      is_accountant?: boolean;
     }
   ): Promise<UserProfileResponse> => {
     const response = await apiClient.put<UserProfileResponse>(
@@ -104,16 +106,43 @@ export const userApi = {
     return response.data;
   },
 
-  // Updates the user record itself (role, email). role_uuid lives on the user,
-  // not on /user-employments — this hits PUT /users/{uuid} (via _method=PUT).
+  // Updates the user record (role, email) and, optionally, the employment
+  // section. This hits PUT /users/{uuid} (via _method=PUT) — the same endpoint
+  // that create user uses — and is the only place the manager/accountant/
+  // director flags actually persist.
   updateUser: async (
     uuid: string,
-    data: { email?: string; role_uuid?: string | null }
+    data: {
+      email?: string;
+      role_uuid?: string | null;
+      employment?: {
+        position_uuid?: string | null;
+        department_uuid?: string | null;
+        office_uuid?: string | null;
+        joined_date?: string | null;
+        is_manager?: boolean;
+        is_accountant?: boolean;
+        is_director?: boolean;
+      };
+    }
   ): Promise<UserProfileResponse> => {
     const formData = new FormData();
     formData.append("_method", "PUT");
     if (data.email != null) formData.append("email", data.email);
     if (data.role_uuid != null) formData.append("role_uuid", data.role_uuid);
+
+    const emp = data.employment;
+    if (emp) {
+      if (emp.position_uuid) formData.append("employment[position_uuid]", emp.position_uuid);
+      if (emp.department_uuid) formData.append("employment[department_uuid]", emp.department_uuid);
+      if (emp.office_uuid) formData.append("employment[office_uuid]", emp.office_uuid);
+      if (emp.joined_date) formData.append("employment[joined_date]", emp.joined_date);
+      // Flags are always sent (as "1"/"0") so unchecking one actually persists —
+      // a missing key would leave the previous value untouched.
+      if (emp.is_manager != null) formData.append("employment[is_manager]", emp.is_manager ? "1" : "0");
+      if (emp.is_accountant != null) formData.append("employment[is_accountant]", emp.is_accountant ? "1" : "0");
+      if (emp.is_director != null) formData.append("employment[is_director]", emp.is_director ? "1" : "0");
+    }
 
     const response = await apiClient.post<UserProfileResponse>(
       `/users/${uuid}`,
@@ -173,6 +202,7 @@ export const userApi = {
       joined_date?: string;
       is_manager?: boolean;
       is_accountant?: boolean;
+      is_director?: boolean;
     };
     emergency?: {
       name?: string;
@@ -221,6 +251,7 @@ export const userApi = {
       if (emp.joined_date) formData.append("employment[joined_date]", emp.joined_date);
       if (emp.is_manager != null) formData.append("employment[is_manager]", emp.is_manager ? "1" : "0");
       if (emp.is_accountant != null) formData.append("employment[is_accountant]", emp.is_accountant ? "1" : "0");
+      if (emp.is_director != null) formData.append("employment[is_director]", emp.is_director ? "1" : "0");
     }
 
     if (data.emergency) {
