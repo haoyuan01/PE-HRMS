@@ -76,6 +76,7 @@ const navItems: NavItem[] = [
       { label: "Position", href: "/dashboard/configuration/position", permission: "position_read" },
       { label: "Department", href: "/dashboard/configuration/department", permission: "department_read" },
       { label: "Branch Office", href: "/dashboard/configuration/branch-office", permission: "office_read" },
+      { label: "Leave Policy", href: "/dashboard/configuration/leave-policy" },
       { label: "System", href: "/dashboard/configuration/system" },
       { label: "Audit Log", href: "/dashboard/configuration/audit-log", permission: "activity_log_read" },
     ],
