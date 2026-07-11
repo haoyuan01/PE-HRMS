@@ -4,12 +4,17 @@ import { useState, useMemo, useEffect } from "react";
 import { Search, SlidersHorizontal, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useLeavePolicies } from "@/hooks/useLeavePolicies";
+import { usePermissions } from "@/hooks/usePermissions";
 import { LeavePolicyTable } from "@/components/modules/configuration/leave-policy-table";
 import { LeavePolicyFormModal } from "@/components/modules/configuration/leave-policy-form-modal";
 import { LeavePolicyDeleteModal } from "@/components/modules/configuration/leave-policy-delete-modal";
 import type { LeavePolicy } from "@/types/leave-policy";
 
 export default function LeavePolicyPage() {
+  const { can } = usePermissions();
+  const canCreate = can("leave_policy_create");
+  const canEdit = can("leave_policy_update");
+  const canDelete = can("leave_policy_delete");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -72,13 +77,15 @@ export default function LeavePolicyPage() {
             <SlidersHorizontal className="h-4 w-4" />
             Filter
           </button>
-          <button
-            onClick={() => setForm({ policy: null })}
-            className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Add Policy
-          </button>
+          {canCreate && (
+            <button
+              onClick={() => setForm({ policy: null })}
+              className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Add Policy
+            </button>
+          )}
         </div>
       </div>
 
@@ -99,6 +106,8 @@ export default function LeavePolicyPage() {
             <LeavePolicyTable
               policies={policies}
               isLoading={isLoading}
+              canEdit={canEdit}
+              canDelete={canDelete}
               onEdit={(policy) => setForm({ policy })}
               onDelete={setDeleteTarget}
             />

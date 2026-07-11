@@ -28,9 +28,17 @@ function humanizeModule(key: string) {
     .join(" ");
 }
 
-// "Read Activity Log" -> "Read" (the leading action word)
+// The action verb in a permission name. Backend naming is inconsistent — most
+// are "Read Leave Policy" (action first) but some are "Leave Policy Update"
+// (action last), so check both ends before falling back to the first word.
+const ACTION_WORDS = ["Read", "Create", "Update", "Delete"];
+
 function actionLabel(name: string) {
-  return name.split(" ")[0];
+  const words = name.split(" ");
+  if (ACTION_WORDS.includes(words[0])) return words[0];
+  const last = words[words.length - 1];
+  if (ACTION_WORDS.includes(last)) return last;
+  return words[0];
 }
 
 interface PermissionFormProps {
