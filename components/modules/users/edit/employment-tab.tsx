@@ -64,7 +64,8 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
     ]).finally(() => setIsLoadingLookups(false));
   }, []);
 
-  const { register, handleSubmit, reset, control } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control, setValue } =
+    useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       role: "",
@@ -92,6 +93,15 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
       });
     }
   }, [profile, employment, roles, positions, offices, departments, reset]);
+
+  // The three role flags are mutually exclusive — selecting one clears the rest.
+  const ROLE_FIELDS = ["is_manager", "is_accountant", "is_director"] as const;
+  const selectRole = (
+    role: (typeof ROLE_FIELDS)[number],
+    checked: boolean
+  ) => {
+    ROLE_FIELDS.forEach((f) => setValue(f, f === role ? checked : false));
+  };
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -265,7 +275,9 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
               <Checkbox
                 id="is_manager"
                 checked={field.value}
-                onCheckedChange={(checked) => field.onChange(checked === true)}
+                onCheckedChange={(checked) =>
+                  selectRole("is_manager", checked === true)
+                }
                 className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
               />
               <label
@@ -285,7 +297,9 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
               <Checkbox
                 id="is_accountant"
                 checked={field.value}
-                onCheckedChange={(checked) => field.onChange(checked === true)}
+                onCheckedChange={(checked) =>
+                  selectRole("is_accountant", checked === true)
+                }
                 className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
               />
               <label
@@ -305,7 +319,9 @@ export function EmploymentTab({ profile, onSaved }: EmploymentTabProps) {
               <Checkbox
                 id="is_director"
                 checked={field.value}
-                onCheckedChange={(checked) => field.onChange(checked === true)}
+                onCheckedChange={(checked) =>
+                  selectRole("is_director", checked === true)
+                }
                 className="size-[18px] rounded border-2 border-on-surface-variant/40 data-checked:border-ds-primary data-checked:bg-ds-primary data-checked:text-white"
               />
               <label
