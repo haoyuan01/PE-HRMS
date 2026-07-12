@@ -6,11 +6,16 @@ import { UploadCloud, FileText, X } from "lucide-react";
 interface ReceiptDropzoneProps {
   file: File | null;
   onChange: (file: File | null) => void;
+  label?: string;
 }
 
 const ACCEPT = "image/png,image/jpeg,application/pdf";
 
-export function ReceiptDropzone({ file, onChange }: ReceiptDropzoneProps) {
+export function ReceiptDropzone({
+  file,
+  onChange,
+  label = "Click or drag receipt here",
+}: ReceiptDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -59,9 +64,7 @@ export function ReceiptDropzone({ file, onChange }: ReceiptDropzoneProps) {
       }`}
     >
       <UploadCloud className="h-6 w-6 text-on-surface-variant" />
-      <span className="text-sm font-medium text-on-surface">
-        Click or drag receipt here
-      </span>
+      <span className="text-sm font-medium text-on-surface">{label}</span>
       <span className="text-xs text-on-surface-variant">
         PNG, JPG, PDF · Max 5MB
       </span>

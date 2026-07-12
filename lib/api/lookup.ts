@@ -46,4 +46,8 @@ export const lookupApi = {
   getRoles: (): Promise<LookupItem[]> => cachedGet("roles", "/lookup/roles"),
   getClaimApprovers: (): Promise<LookupItem[]> =>
     cachedGet("claimApprovers", "/lookup/manager-approvers?search_words[]="),
+  getManagerApprovers: (): Promise<LookupItem[]> =>
+    cachedGet("managerApprovers", "/lookup/manager-approvers?search_words[]="),
+  getUsers: (): Promise<LookupItem[]> =>
+    cachedGet("users", "/lookup/users?search_words[]="),
 };
