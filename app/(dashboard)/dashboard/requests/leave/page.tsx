@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useLeaveRequests } from "@/hooks/useLeaveRequests";
 import { leaveRequestApi } from "@/lib/api/leaveRequest";
@@ -58,16 +57,17 @@ export default function LeaveFormPage() {
     [requests, effectiveTab, currentUserUuid]
   );
 
-  // Status summary cards (global totals).
+  // Status summary cards (global totals) — only for managers/directors.
   const [summary, setSummary] = useState<LeaveStatusSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   useEffect(() => {
+    if (!canViewStaff) return;
     leaveRequestApi
       .getStatusSummaries()
       .then(setSummary)
       .catch(() => setSummary(null))
       .finally(() => setSummaryLoading(false));
-  }, []);
+  }, [canViewStaff]);
 
   const switchTab = (next: Tab) => {
     setTab(next);
@@ -116,8 +116,10 @@ export default function LeaveFormPage() {
         </button>
       </div>
 
-      {/* Status summary cards */}
-      <LeaveStatusCards summary={summary} isLoading={summaryLoading} />
+      {/* Status summary cards — managers/directors only */}
+      {canViewStaff && (
+        <LeaveStatusCards summary={summary} isLoading={summaryLoading} />
+      )}
 
       {/* Table Card */}
       <div className="rounded-2xl bg-surface-container-lowest shadow-[var(--shadow-ambient)]">
@@ -137,8 +139,8 @@ export default function LeaveFormPage() {
               requests={visibleRequests}
               isLoading={isLoading}
               showStaff={effectiveTab === "staff"}
-              onView={() =>
-                toast.info("Leave request detail is coming soon.")
+              onView={(r) =>
+                router.push(`/dashboard/requests/leave/detail?uuid=${r.uuid}`)
               }
             />
             {pagination && pagination.total > 0 && (

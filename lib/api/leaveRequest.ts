@@ -4,6 +4,7 @@ import type {
   CalendarDaySummary,
   CalendarSummaryResponse,
   LeaveRequest,
+  LeaveRequestDetail,
   LeaveStatusSummary,
 } from "@/types/leave-request";
 
@@ -65,6 +66,37 @@ export const leaveRequestApi = {
       { params: query }
     );
     return response.data;
+  },
+
+  getLeaveRequest: async (uuid: string): Promise<LeaveRequestDetail> => {
+    const response = await apiClient.get<{ data: LeaveRequestDetail }>(
+      `/leave-requests/${uuid}`
+    );
+    return response.data.data;
+  },
+
+  // Manager approve/reject — the `approve` boolean decides the outcome.
+  managerReviewLeaveRequest: async (
+    uuid: string,
+    approve: boolean,
+    remark: string
+  ): Promise<void> => {
+    await apiClient.patch(`/leave-requests/manager-approves/${uuid}`, {
+      approve,
+      remark,
+    });
+  },
+
+  // Director (General Manager) approve/reject — mirrors the manager endpoint.
+  directorReviewLeaveRequest: async (
+    uuid: string,
+    approve: boolean,
+    remark: string
+  ): Promise<void> => {
+    await apiClient.patch(`/leave-requests/director-approves/${uuid}`, {
+      approve,
+      remark,
+    });
   },
 
   createLeaveRequest: async (
