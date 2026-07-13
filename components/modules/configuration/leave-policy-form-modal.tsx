@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useEffect, useRef } from "react";
+import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import axios from "axios";
@@ -28,33 +28,48 @@ function extractErrorMessage(err: unknown, isEdit: boolean): string {
 }
 
 const tierSchema = z.object({
-  service_year_from: z.string(),
-  service_year_to: z.string(),
-  entitlement_days: z.string(),
+  service_year_from: z.string().min(1, "Required"),
+  service_year_to: z.string().min(1, "Required"),
+  entitlement_days: z.string().min(1, "Required"),
 });
 
-// Optional numeric field that, when filled, must fall within [min, max].
-const optionalRange = (min: number, max: number, label: string) =>
+// Required numeric field.
+const requiredNum = (label: string) =>
+  z.string().min(1, `${label} is required`);
+
+// Required numeric field that must fall within [min, max].
+const requiredRange = (min: number, max: number, label: string) =>
   z.string().refine(
-    (v) => v === "" || (Number(v) >= min && Number(v) <= max),
+    (v) => v !== "" && Number(v) >= min && Number(v) <= max,
     `${label} must be between ${min} and ${max}`
   );
 
-const schema = z.object({
-  name: z.string().min(1, "Name is required"),
-  code: z.string().min(1, "Code is required"),
-  description: z.string(),
-  allow_half_day: z.boolean(),
-  requires_attachment: z.boolean(),
-  is_paid: z.boolean(),
-  is_handover_required: z.boolean(),
-  min_notice_days: z.string(),
-  carry_forward_days: z.string(),
-  carry_forward_expiry_date: optionalRange(1, 31, "Carry forward date"),
-  carry_forward_expiry_month: optionalRange(1, 12, "Carry forward month"),
-  handover_min_days: z.string(),
-  leave_policy_tiers: z.array(tierSchema).min(1, "Add at least one tier"),
-});
+const schema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    code: z.string().min(1, "Code is required"),
+    description: z.string().min(1, "Description is required"),
+    allow_half_day: z.boolean(),
+    requires_attachment: z.boolean(),
+    is_paid: z.boolean(),
+    is_handover_required: z.boolean(),
+    min_notice_days: requiredNum("Min notice days"),
+    carry_forward_days: requiredNum("Carry forward days"),
+    carry_forward_expiry_date: requiredRange(1, 31, "Carry forward date"),
+    carry_forward_expiry_month: requiredRange(1, 12, "Carry forward month"),
+    handover_min_days: z.string(),
+    leave_policy_tiers: z.array(tierSchema).min(1, "Add at least one tier"),
+  })
+  // Handover min days is only required (and used) when handover is required.
+  .superRefine((data, ctx) => {
+    if (data.is_handover_required && !data.handover_min_days) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["handover_min_days"],
+        message: "Handover min days is required",
+      });
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -132,6 +147,7 @@ export function LeavePolicyFormModal({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -162,6 +178,15 @@ export function LeavePolicyFormModal({
     control,
     name: "leave_policy_tiers",
   });
+
+  // Handover min days is only editable/required when handover is required.
+  const isHandoverRequired = useWatch({
+    control,
+    name: "is_handover_required",
+  });
+  useEffect(() => {
+    if (!isHandoverRequired) setValue("handover_min_days", "");
+  }, [isHandoverRequired, setValue]);
 
   const onSubmit = async (data: FormValues) => {
     const payload: LeavePolicyPayload = {
@@ -254,6 +279,11 @@ export function LeavePolicyFormModal({
               rows={3}
               className="w-full rounded-lg border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all"
             />
+            {errors.description && (
+              <p className="text-xs text-ds-error">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
           {/* Toggle row */}
@@ -298,10 +328,20 @@ export function LeavePolicyFormModal({
             <div className="space-y-1.5">
               <label className={LABEL}>Min. Notice Days</label>
               <Input type="number" step="any" {...register("min_notice_days")} />
+              {errors.min_notice_days && (
+                <p className="text-xs text-ds-error">
+                  {errors.min_notice_days.message}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className={LABEL}>Carry Forward Days</label>
               <Input type="number" step="any" {...register("carry_forward_days")} />
+              {errors.carry_forward_days && (
+                <p className="text-xs text-ds-error">
+                  {errors.carry_forward_days.message}
+                </p>
+              )}
             </div>
             <div className="flex items-end pb-2.5">
               <Controller
@@ -350,7 +390,18 @@ export function LeavePolicyFormModal({
             </div>
             <div className="space-y-1.5">
               <label className={LABEL}>Handover Min Days</label>
-              <Input type="number" step="any" {...register("handover_min_days")} />
+              <Input
+                type="number"
+                step="any"
+                disabled={!isHandoverRequired}
+                className="disabled:cursor-not-allowed disabled:opacity-60"
+                {...register("handover_min_days")}
+              />
+              {errors.handover_min_days && (
+                <p className="text-xs text-ds-error">
+                  {errors.handover_min_days.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -386,42 +437,58 @@ export function LeavePolicyFormModal({
               <p className="text-sm text-on-surface-variant">No tiers added.</p>
             )}
 
-            {fields.map((tier, index) => (
-              <div key={tier.id} className="flex items-end gap-3">
-                <div className="flex-1 space-y-1.5">
-                  <label className={LABEL}>Min Service Year</label>
-                  <Input
-                    type="number"
-                    step="any"
-                    {...register(`leave_policy_tiers.${index}.service_year_from`)}
-                  />
+            {fields.map((tier, index) => {
+              const tierError = errors.leave_policy_tiers?.[index];
+              return (
+                <div key={tier.id} className="space-y-1">
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1 space-y-1.5">
+                      <label className={LABEL}>Min Service Year</label>
+                      <Input
+                        type="number"
+                        step="any"
+                        {...register(
+                          `leave_policy_tiers.${index}.service_year_from`
+                        )}
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      <label className={LABEL}>Max Service Year</label>
+                      <Input
+                        type="number"
+                        step="any"
+                        {...register(
+                          `leave_policy_tiers.${index}.service_year_to`
+                        )}
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      <label className={LABEL}>Entitled Days</label>
+                      <Input
+                        type="number"
+                        step="any"
+                        {...register(
+                          `leave_policy_tiers.${index}.entitlement_days`
+                        )}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      className="mb-1 rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+                      title="Remove tier"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {tierError && (
+                    <p className="text-xs text-ds-error">
+                      All tier fields are required.
+                    </p>
+                  )}
                 </div>
-                <div className="flex-1 space-y-1.5">
-                  <label className={LABEL}>Max Service Year</label>
-                  <Input
-                    type="number"
-                    step="any"
-                    {...register(`leave_policy_tiers.${index}.service_year_to`)}
-                  />
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  <label className={LABEL}>Entitled Days</label>
-                  <Input
-                    type="number"
-                    step="any"
-                    {...register(`leave_policy_tiers.${index}.entitlement_days`)}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => remove(index)}
-                  className="mb-1 rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
-                  title="Remove tier"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </form>
 

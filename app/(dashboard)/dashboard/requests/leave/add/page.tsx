@@ -26,6 +26,7 @@ import { leavePolicyApi } from "@/lib/api/leavePolicy";
 import { leaveEntitlementApi } from "@/lib/api/leaveEntitlement";
 import { leaveRequestApi } from "@/lib/api/leaveRequest";
 import type { LeavePolicy } from "@/types/leave-policy";
+import type { LeaveEntitlement } from "@/types/leave-entitlement";
 
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
@@ -73,6 +74,8 @@ export default function AddLeaveRequestPage() {
   const [entitlementByPolicy, setEntitlementByPolicy] = useState<
     Record<string, string>
   >({});
+  const [entitlements, setEntitlements] = useState<LeaveEntitlement[]>([]);
+  const [entitlementsLoading, setEntitlementsLoading] = useState(true);
   // Attachment kept outside RHF (Files don't serialize well).
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentError, setAttachmentError] = useState(false);
@@ -95,13 +98,16 @@ export default function AddLeaveRequestPage() {
       .then((res) => {
         const me =
           res.data.find((u) => u.uuid === currentUserUuid) ?? res.data[0];
+        const list = me?.leave_entitlements ?? [];
+        setEntitlements(list);
         const map: Record<string, string> = {};
-        me?.leave_entitlements.forEach((e) => {
+        list.forEach((e) => {
           map[e.leave_policy.uuid] = e.uuid;
         });
         setEntitlementByPolicy(map);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setEntitlementsLoading(false));
   }, [currentUserUuid]);
 
   const {
@@ -308,6 +314,44 @@ export default function AddLeaveRequestPage() {
           </p>
         </div>
       </div>
+
+      {/* Leave balance summary — how many days the user has left per type. The
+          container stays put while loading and shows skeleton placeholders. */}
+      {(entitlementsLoading || entitlements.length > 0) && (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {entitlementsLoading
+            ? Array.from({ length: 2 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl bg-surface-container-lowest p-5 shadow-[var(--shadow-ambient)]"
+                >
+                  <div className="h-3 w-24 animate-pulse rounded bg-surface-container-high" />
+                  <div className="mt-2 h-8 w-28 animate-pulse rounded bg-surface-container-high" />
+                  <div className="mt-2 h-3 w-16 animate-pulse rounded bg-surface-container-high" />
+                </div>
+              ))
+            : entitlements.map((e) => (
+                <div
+                  key={e.uuid}
+                  className="rounded-2xl bg-surface-container-lowest p-5 shadow-[var(--shadow-ambient)]"
+                >
+                  <p className="truncate text-xs font-medium uppercase tracking-widest text-on-surface-variant">
+                    {e.leave_policy.name}
+                  </p>
+                  <p className="mt-1 font-display text-3xl font-bold tracking-tight text-on-surface">
+                    {Number(e.balance_days)}
+                    <span className="text-sm font-medium text-on-surface-variant">
+                      {" "}
+                      / {Number(e.entitled_days)} days
+                    </span>
+                  </p>
+                  <p className="text-xs text-on-surface-variant">
+                    {Number(e.used_days)} used
+                  </p>
+                </div>
+              ))}
+        </div>
+      )}
 
       {/* Form Card */}
       <form

@@ -55,6 +55,9 @@ export interface LeaveRequest {
   manager_approved: boolean;
   director_action_at: string | null;
   director_approved: boolean;
+  handover_action_at: string | null;
+  handover_approved: boolean;
+  handover_by: { uuid: string } | null;
   is_active: boolean;
   created_at: string;
   user: {
@@ -114,6 +117,8 @@ export interface LeaveRequestDetail {
   manager_approved: boolean;
   director_action_at: string | null;
   director_approved: boolean;
+  handover_action_at: string | null;
+  handover_approved: boolean;
   created_at: string;
   user: LeaveRequestPerson;
   manager_approver: LeaveRequestPerson | null;

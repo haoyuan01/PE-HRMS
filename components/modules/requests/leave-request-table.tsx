@@ -17,9 +17,14 @@ function formatDate(value: string | null) {
   return format(new Date(value), "dd MMM yyyy");
 }
 
-// Approval state derived from the manager/director action flags.
+// Approval state derived from the handover/manager/director action flags. A
+// handover person who acted but didn't approve rejects the request; approving
+// it just keeps the request pending for the manager/director.
 function requestStatus(r: LeaveRequest) {
+  const handoverRejected =
+    !!r.handover_by && !!r.handover_action_at && !r.handover_approved;
   const rejected =
+    handoverRejected ||
     (r.manager_action_at && !r.manager_approved) ||
     (r.director_action_at && !r.director_approved);
   if (rejected)

@@ -22,7 +22,10 @@ function formatDate(value: string | null) {
 }
 
 function requestStatus(r: LeaveRequestDetail) {
+  const handoverRejected =
+    !!r.handover_by && !!r.handover_action_at && !r.handover_approved;
   const rejected =
+    handoverRejected ||
     (r.manager_action_at && !r.manager_approved) ||
     (r.director_action_at && !r.director_approved);
   if (rejected)
