@@ -113,7 +113,6 @@ function ClaimDetailContent() {
   const uuid = useSearchParams().get("uuid") ?? "";
   const isManager = useAuthStore((s) => s.isManager);
   const isDirector = useAuthStore((s) => s.isDirector);
-  const isApprover = useAuthStore((s) => s.isManager || s.isAccountant);
   const currentUserUuid = useAuthStore((s) => s.user?.uuid);
 
   const [claim, setClaim] = useState<ClaimHeader | null>(null);
@@ -188,7 +187,6 @@ function ClaimDetailContent() {
   // You can't review your own claim (e.g. opened from My List) — hide all
   // review actions in that case.
   const isOwnClaim = claim?.user?.uuid === currentUserUuid;
-  const canReview = isApprover && !isOwnClaim;
   const canApprove = isManager && !isOwnClaim;
   // Directors (General Managers) review items with their own approve/reject.
   const canDirectorReview = isDirector && !isOwnClaim;
@@ -319,11 +317,20 @@ function ClaimDetailContent() {
                     )}
                   </div>
 
-                  {/* Per-item status / review actions. Directors review with the
-                      director_* fields; everyone else with the manager_* fields.
-                      Once that reviewer has acted (…_action_at set), hide the
-                      buttons and show the outcome instead. */}
-                  {isDirector ? (
+                  {/* Per-item status / review actions.
+                      - On your own claim (or as a non-reviewer) it's read-only:
+                        the outcome comes from whichever reviewer acted last —
+                        director if the director acted, else the manager, else
+                        nothing.
+                      - When reviewing someone else's claim, directors act with
+                        the director_* flow and managers with the manager_* one. */}
+                  {isOwnClaim || (!isManager && !isDirector) ? (
+                    item.director_action_at ? (
+                      <ReviewOutcome approved={item.director_approved} />
+                    ) : item.manager_action_at ? (
+                      <ReviewOutcome approved={item.manager_approved} />
+                    ) : null
+                  ) : isDirector ? (
                     item.director_action_at ? (
                       <ReviewOutcome approved={item.director_approved} />
                     ) : (
@@ -342,10 +349,9 @@ function ClaimDetailContent() {
                   ) : item.manager_action_at ? (
                     <ReviewOutcome approved={item.manager_approved} />
                   ) : (
-                    canReview && (
+                    canApprove && (
                       <ReviewActions
                         disabled={processingItem === item.uuid}
-                        showApprove={canApprove}
                         onReject={() =>
                           reviewItem(item.uuid, false, claimApi.rejectClaimItem)
                         }
