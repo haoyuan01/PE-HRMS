@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { Camera, Pencil } from "lucide-react";
@@ -30,21 +30,40 @@ const FIELD_TRIGGER =
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-const schema = z.object({
-  full_name: z.string().min(1, "Full name is required"),
-  first_name: z.string().min(1, "First name is required"),
-  last_name: z.string().min(1, "Last name is required"),
-  personal_email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Invalid email address"),
-  gender: z.string(),
-  is_married: z.string(),
-  identity_number: z.string(),
-  passport_number: z.string(),
-  passport_expiry_date: z.string(),
-  blood_type: z.string(),
-});
+const IDENTITY_REGEX = /^\d{6}-\d{2}-\d{4}$/;
+
+const schema = z
+  .object({
+    full_name: z.string(),
+    first_name: z.string(),
+    last_name: z.string(),
+    personal_email: z
+      .string()
+      .min(1, "Email is required")
+      .email("Invalid email address"),
+    nationality: z.enum(["malaysian", "non_malaysian"]),
+    gender: z.string(),
+    is_married: z.string(),
+    identity_number: z.string(),
+    passport_number: z.string(),
+    passport_expiry_date: z.string(),
+    blood_type: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    // Malaysians provide an identity number in the 12-digit IC format; when
+    // filled it must match. Non-Malaysians use passport fields instead.
+    if (
+      data.nationality === "malaysian" &&
+      data.identity_number &&
+      !IDENTITY_REGEX.test(data.identity_number)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["identity_number"],
+        message: "Identity number must be in the format 000000-00-0000",
+      });
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -72,6 +91,7 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
       first_name: "",
       last_name: "",
       personal_email: "",
+      nationality: "malaysian",
       gender: "",
       is_married: "",
       identity_number: "",
@@ -89,6 +109,14 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
         first_name: personal?.first_name ?? "",
         last_name: personal?.last_name ?? "",
         personal_email: profile.email ?? "",
+        // Preselect nationality: identity present -> Malaysian; only a passport
+        // present -> Non-Malaysian; if both, default to Malaysian.
+        nationality:
+          personal?.identity_number
+            ? "malaysian"
+            : personal?.passport_number
+              ? "non_malaysian"
+              : "malaysian",
         gender: personal?.gender === true ? "male" : personal?.gender === false ? "female" : "",
         is_married: personal?.is_married === true ? "married" : personal?.is_married === false ? "single" : "",
         identity_number: personal?.identity_number ?? "",
@@ -99,15 +127,22 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
     }
   }, [profile, personal, reset]);
 
+  const nationality = useWatch({ control, name: "nationality" });
+  const isMalaysian = nationality !== "non_malaysian";
+
   const onSubmit = async (data: FormValues) => {
     try {
       await userApi.updatePersonal(profile.uuid, {
         full_name: data.full_name,
         first_name: data.first_name,
         last_name: data.last_name,
-        identity_number: data.identity_number || null,
-        passport_number: data.passport_number || null,
-        passport_expiry_date: data.passport_expiry_date || null,
+        // Malaysians keep an identity number; others keep passport details. The
+        // unused side is cleared so a hidden field doesn't linger on the record.
+        identity_number: isMalaysian ? data.identity_number || null : null,
+        passport_number: isMalaysian ? null : data.passport_number || null,
+        passport_expiry_date: isMalaysian
+          ? null
+          : data.passport_expiry_date || null,
         blood_type: data.blood_type || null,
         gender: data.gender === "male" ? true : data.gender === "female" ? false : null,
         is_married: data.is_married === "married" ? true : data.is_married === "single" ? false : null,
@@ -244,10 +279,10 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
           )}
         </div>
 
-        {/* Personal Email */}
+        {/* Email */}
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="personal_email" className={FIELD_LABEL}>
-            Personal Email
+            Email *
           </Label>
           <Input
             id="personal_email"
@@ -256,6 +291,11 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
             className={FIELD_INPUT}
             {...register("personal_email")}
           />
+          {errors.personal_email && (
+            <p className="text-xs text-ds-error">
+              {errors.personal_email.message}
+            </p>
+          )}
         </div>
 
         {/* Gender */}
@@ -312,44 +352,80 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
           />
         </div>
 
-        {/* Identity No */}
+        {/* Nationality */}
         <div className="space-y-2">
-          <Label htmlFor="identity_number" className={FIELD_LABEL}>
-            Identity No.
-          </Label>
-          <Input
-            id="identity_number"
-            placeholder="e.g. 880210-01-2233"
-            className={FIELD_INPUT}
-            {...register("identity_number")}
+          <Label className={FIELD_LABEL}>Nationality</Label>
+          <Controller
+            name="nationality"
+            control={control}
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                items={[
+                  { value: "malaysian", label: "Malaysian" },
+                  { value: "non_malaysian", label: "Non-Malaysian" },
+                ]}
+              >
+                <SelectTrigger className={FIELD_TRIGGER}>
+                  <SelectValue placeholder="Select nationality" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="malaysian">Malaysian</SelectItem>
+                  <SelectItem value="non_malaysian">Non-Malaysian</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           />
         </div>
 
-        {/* Passport No */}
-        <div className="space-y-2">
-          <Label htmlFor="passport_number" className={FIELD_LABEL}>
-            Passport No.
-          </Label>
-          <Input
-            id="passport_number"
-            placeholder="e.g. A12345678"
-            className={FIELD_INPUT}
-            {...register("passport_number")}
-          />
-        </div>
+        {/* Identity No — Malaysians only */}
+        {isMalaysian ? (
+          <div className="space-y-2">
+            <Label htmlFor="identity_number" className={FIELD_LABEL}>
+              Identity No.
+            </Label>
+            <Input
+              id="identity_number"
+              placeholder="e.g. 880210-01-2233"
+              className={FIELD_INPUT}
+              {...register("identity_number")}
+            />
+            {errors.identity_number && (
+              <p className="text-xs text-ds-error">
+                {errors.identity_number.message}
+              </p>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Passport No */}
+            <div className="space-y-2">
+              <Label htmlFor="passport_number" className={FIELD_LABEL}>
+                Passport No.
+              </Label>
+              <Input
+                id="passport_number"
+                placeholder="e.g. A12345678"
+                className={FIELD_INPUT}
+                {...register("passport_number")}
+              />
+            </div>
 
-        {/* Passport Expiry Date */}
-        <div className="space-y-2">
-          <Label htmlFor="passport_expiry_date" className={FIELD_LABEL}>
-            Passport Expiry Date
-          </Label>
-          <Input
-            id="passport_expiry_date"
-            type="date"
-            className={FIELD_INPUT}
-            {...register("passport_expiry_date")}
-          />
-        </div>
+            {/* Passport Expiry Date */}
+            <div className="space-y-2">
+              <Label htmlFor="passport_expiry_date" className={FIELD_LABEL}>
+                Passport Expiry Date
+              </Label>
+              <Input
+                id="passport_expiry_date"
+                type="date"
+                className={FIELD_INPUT}
+                {...register("passport_expiry_date")}
+              />
+            </div>
+          </>
+        )}
 
         {/* Blood Type */}
         <div className="space-y-2">

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
@@ -62,23 +62,27 @@ const COUNTRIES = [
   "Philippines",
 ];
 
-const schema = z.object({
-  email: z.string().min(1, "Email is required").email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  passcode: z
-    .string()
-    .min(1, "Security PIN is required")
-    .regex(/^\d{6}$/, "PIN must be 6 digits"),
-  role_uuid: z.string().min(1, "Role is required"),
-  full_name: z.string().min(1, "Full name is required"),
-  first_name: z.string().min(1, "First name is required"),
-  last_name: z.string().min(1, "Last name is required"),
-  identity_number: z.string().min(1, "Identity number is required"),
-  passport_number: z.string().min(1, "Passport number is required"),
-  passport_expiry_date: z.string().min(1, "Passport expiry date is required"),
-  blood_type: z.string().min(1, "Blood type is required"),
-  gender: z.string().min(1, "Gender is required"),
-  is_married: z.string().min(1, "Marital status is required"),
+const IDENTITY_REGEX = /^\d{6}-\d{2}-\d{4}$/;
+
+const schema = z
+  .object({
+    email: z.string().min(1, "Email is required").email("Invalid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    passcode: z
+      .string()
+      .min(1, "Security PIN is required")
+      .regex(/^\d{6}$/, "PIN must be 6 digits"),
+    role_uuid: z.string().min(1, "Role is required"),
+    nationality: z.enum(["malaysian", "non_malaysian"]),
+    full_name: z.string(),
+    first_name: z.string(),
+    last_name: z.string(),
+    identity_number: z.string(),
+    passport_number: z.string(),
+    passport_expiry_date: z.string(),
+    blood_type: z.string(),
+    gender: z.string(),
+    is_married: z.string(),
   company_email: z.string(),
   phone_number: z.string(),
   address_1: z.string(),
@@ -98,7 +102,22 @@ const schema = z.object({
   emergency_name: z.string(),
   emergency_phone: z.string(),
   emergency_relationship: z.string(),
-});
+  })
+  .superRefine((data, ctx) => {
+    // Malaysians provide an identity number in the 12-digit IC format; when
+    // filled it must match. Non-Malaysians use passport fields instead.
+    if (
+      data.nationality === "malaysian" &&
+      data.identity_number &&
+      !IDENTITY_REGEX.test(data.identity_number)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["identity_number"],
+        message: "Identity number must be in the format 000000-00-0000",
+      });
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -168,11 +187,13 @@ export default function AddUserPage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
+
     defaultValues: {
       email: "",
       password: "",
       passcode: "",
       role_uuid: "",
+      nationality: "malaysian",
       full_name: "",
       first_name: "",
       last_name: "",
@@ -204,6 +225,9 @@ export default function AddUserPage() {
     },
   });
 
+  const nationality = useWatch({ control, name: "nationality" });
+  const isMalaysian = nationality !== "non_malaysian";
+
   const onSubmit = async (data: FormValues) => {
     setIsSaving(true);
     try {
@@ -216,9 +240,16 @@ export default function AddUserPage() {
           full_name: data.full_name,
           first_name: data.first_name,
           last_name: data.last_name,
-          identity_number: data.identity_number || undefined,
-          passport_number: data.passport_number || undefined,
-          passport_expiry_date: data.passport_expiry_date || undefined,
+          // Malaysians provide an identity number; others use passport details.
+          identity_number: isMalaysian
+            ? data.identity_number || undefined
+            : undefined,
+          passport_number: isMalaysian
+            ? undefined
+            : data.passport_number || undefined,
+          passport_expiry_date: isMalaysian
+            ? undefined
+            : data.passport_expiry_date || undefined,
           blood_type: data.blood_type || undefined,
           gender: data.gender === "male" ? true : data.gender === "female" ? false : undefined,
           is_married: data.is_married === "married" ? true : data.is_married === "single" ? false : undefined,
@@ -493,7 +524,7 @@ export default function AddUserPage() {
                 {/* Full Name */}
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="full_name" className={FIELD_LABEL}>
-                    Full Name *
+                    Full Name
                   </Label>
                   <Input
                     id="full_name"
@@ -509,7 +540,7 @@ export default function AddUserPage() {
                 {/* First Name */}
                 <div className="space-y-2">
                   <Label htmlFor="first_name" className={FIELD_LABEL}>
-                    First Name *
+                    First Name
                   </Label>
                   <Input
                     id="first_name"
@@ -525,7 +556,7 @@ export default function AddUserPage() {
                 {/* Last Name */}
                 <div className="space-y-2">
                   <Label htmlFor="last_name" className={FIELD_LABEL}>
-                    Last Name *
+                    Last Name
                   </Label>
                   <Input
                     id="last_name"
@@ -538,57 +569,90 @@ export default function AddUserPage() {
                   )}
                 </div>
 
-                {/* Identity Number */}
+                {/* Nationality */}
                 <div className="space-y-2">
-                  <Label htmlFor="identity_number" className={FIELD_LABEL}>
-                    Identity No. *
-                  </Label>
-                  <Input
-                    id="identity_number"
-                    placeholder="e.g. 880210-01-2233"
-                    className={FIELD_INPUT}
-                    {...register("identity_number")}
+                  <Label className={FIELD_LABEL}>Nationality</Label>
+                  <Controller
+                    name="nationality"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        items={[
+                          { value: "malaysian", label: "Malaysian" },
+                          { value: "non_malaysian", label: "Non-Malaysian" },
+                        ]}
+                      >
+                        <SelectTrigger className={FIELD_TRIGGER}>
+                          <SelectValue placeholder="Select nationality" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="malaysian">Malaysian</SelectItem>
+                          <SelectItem value="non_malaysian">
+                            Non-Malaysian
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   />
-                  {errors.identity_number && (
-                    <p className="text-xs text-ds-error">{errors.identity_number.message}</p>
-                  )}
                 </div>
 
-                {/* Passport Number */}
-                <div className="space-y-2">
-                  <Label htmlFor="passport_number" className={FIELD_LABEL}>
-                    Passport No. *
-                  </Label>
-                  <Input
-                    id="passport_number"
-                    placeholder="e.g. A12345678"
-                    className={FIELD_INPUT}
-                    {...register("passport_number")}
-                  />
-                  {errors.passport_number && (
-                    <p className="text-xs text-ds-error">{errors.passport_number.message}</p>
-                  )}
-                </div>
+                {/* Identity Number — Malaysians only */}
+                {isMalaysian ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="identity_number" className={FIELD_LABEL}>
+                      Identity No.
+                    </Label>
+                    <Input
+                      id="identity_number"
+                      placeholder="e.g. 880210-01-2233"
+                      className={FIELD_INPUT}
+                      {...register("identity_number")}
+                    />
+                    {errors.identity_number && (
+                      <p className="text-xs text-ds-error">{errors.identity_number.message}</p>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* Passport Number */}
+                    <div className="space-y-2">
+                      <Label htmlFor="passport_number" className={FIELD_LABEL}>
+                        Passport No.
+                      </Label>
+                      <Input
+                        id="passport_number"
+                        placeholder="e.g. A12345678"
+                        className={FIELD_INPUT}
+                        {...register("passport_number")}
+                      />
+                      {errors.passport_number && (
+                        <p className="text-xs text-ds-error">{errors.passport_number.message}</p>
+                      )}
+                    </div>
 
-                {/* Passport Expiry Date */}
-                <div className="space-y-2">
-                  <Label htmlFor="passport_expiry_date" className={FIELD_LABEL}>
-                    Passport Expiry Date *
-                  </Label>
-                  <Input
-                    id="passport_expiry_date"
-                    type="date"
-                    className={FIELD_INPUT}
-                    {...register("passport_expiry_date")}
-                  />
-                  {errors.passport_expiry_date && (
-                    <p className="text-xs text-ds-error">{errors.passport_expiry_date.message}</p>
-                  )}
-                </div>
+                    {/* Passport Expiry Date */}
+                    <div className="space-y-2">
+                      <Label htmlFor="passport_expiry_date" className={FIELD_LABEL}>
+                        Passport Expiry Date
+                      </Label>
+                      <Input
+                        id="passport_expiry_date"
+                        type="date"
+                        className={FIELD_INPUT}
+                        {...register("passport_expiry_date")}
+                      />
+                      {errors.passport_expiry_date && (
+                        <p className="text-xs text-ds-error">{errors.passport_expiry_date.message}</p>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 {/* Blood Type */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Blood Type *</Label>
+                  <Label className={FIELD_LABEL}>Blood Type</Label>
                   <Controller
                     name="blood_type"
                     control={control}
@@ -612,7 +676,7 @@ export default function AddUserPage() {
 
                 {/* Gender */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Gender *</Label>
+                  <Label className={FIELD_LABEL}>Gender</Label>
                   <Controller
                     name="gender"
                     control={control}
@@ -642,7 +706,7 @@ export default function AddUserPage() {
 
                 {/* Marital Status */}
                 <div className="space-y-2">
-                  <Label className={FIELD_LABEL}>Marital Status *</Label>
+                  <Label className={FIELD_LABEL}>Marital Status</Label>
                   <Controller
                     name="is_married"
                     control={control}
