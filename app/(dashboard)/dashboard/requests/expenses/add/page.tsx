@@ -85,6 +85,8 @@ export default function AddExpenseClaimPage() {
     register,
     handleSubmit,
     control,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -99,10 +101,22 @@ export default function AddExpenseClaimPage() {
 
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
-  // Constrain the date pickers to each other so the range stays valid.
+  // Both travel dates must be on or before today; the end can't precede the
+  // start. So the start caps at the earlier of today / the end date, and the
+  // end runs from the start date up to today.
   const startDate = useWatch({ control, name: "start_date" });
   const endDate = useWatch({ control, name: "end_date" });
-  const endMin = startDate && startDate > today ? startDate : today;
+  const startMax = endDate && endDate < today ? endDate : today;
+  // Item dates are only pickable within the travel period, so require both
+  // bounds first.
+  const itemDateDisabled = !startDate || !endDate;
+
+  // Changing the travel period invalidates any already-picked item dates —
+  // clear them so the user re-selects within the new range.
+  useEffect(() => {
+    getValues("items").forEach((_, i) => setValue(`items.${i}.date`, ""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate]);
 
   const onSubmit = async (data: FormValues) => {
     // A receipt is required for every expense item (kept outside RHF).
@@ -243,8 +257,7 @@ export default function AddExpenseClaimPage() {
               <Input
                 id="start_date"
                 type="date"
-                min={today}
-                max={endDate || undefined}
+                max={startMax}
                 className={FIELD_INPUT}
                 {...register("start_date")}
               />
@@ -263,7 +276,8 @@ export default function AddExpenseClaimPage() {
               <Input
                 id="end_date"
                 type="date"
-                min={endMin}
+                min={startDate || undefined}
+                max={today}
                 className={FIELD_INPUT}
                 {...register("end_date")}
               />
@@ -358,7 +372,10 @@ export default function AddExpenseClaimPage() {
                     <Label className={FIELD_LABEL}>Date *</Label>
                     <Input
                       type="date"
-                      className={FIELD_INPUT}
+                      min={startDate || undefined}
+                      max={endDate || today}
+                      disabled={itemDateDisabled}
+                      className={`${FIELD_INPUT} disabled:cursor-not-allowed disabled:opacity-60`}
                       {...register(`items.${index}.date`)}
                     />
                     {errors.items?.[index]?.date && (
