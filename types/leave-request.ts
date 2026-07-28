@@ -41,15 +41,21 @@ export interface CalendarSummaryResponse {
   data: Record<string, CalendarDaySummary>;
 }
 
-// A row in the Leave Requests table.
+export interface LeaveRequestDay {
+  uuid: string;
+  date: string;
+  is_half_day: boolean;
+  is_first_half: boolean;
+}
+
+// A row in the Leave Requests table. Start/end are derived from the first/last
+// leave_request_dates entry (the API no longer sends a top-level range).
 export interface LeaveRequest {
   uuid: string;
-  start_date: string;
-  end_date: string;
   resume_date: string | null;
   total_days: string;
-  is_half_day: boolean;
   reason: string | null;
+  leave_request_dates: LeaveRequestDay[];
   attachment_url: string | null;
   manager_action_at: string | null;
   manager_approved: boolean;
@@ -102,12 +108,8 @@ export interface LeaveRequestPerson {
 
 export interface LeaveRequestDetail {
   uuid: string;
-  start_date: string;
-  end_date: string;
   resume_date: string | null;
   total_days: string;
-  is_half_day: boolean;
-  is_first_half: boolean;
   reason: string | null;
   attachment_url: string | null;
   handover_remark: string | null;
@@ -120,6 +122,7 @@ export interface LeaveRequestDetail {
   handover_action_at: string | null;
   handover_approved: boolean;
   created_at: string;
+  leave_request_dates: LeaveRequestDay[];
   user: LeaveRequestPerson;
   manager_approver: LeaveRequestPerson | null;
   handover_by: LeaveRequestPerson | null;

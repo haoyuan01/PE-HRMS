@@ -17,6 +17,15 @@ function formatDate(value: string | null) {
   return format(new Date(value), "dd MMM yyyy");
 }
 
+// Start/end come from the earliest/latest leave_request_dates entry.
+function leaveDateBounds(r: LeaveRequest) {
+  const dates = (r.leave_request_dates ?? [])
+    .map((d) => d.date)
+    .filter(Boolean)
+    .sort();
+  return { start: dates[0] ?? null, end: dates[dates.length - 1] ?? null };
+}
+
 // Approval state derived from the handover/manager/director action flags. A
 // handover person who acted but didn't approve rejects the request; approving
 // it just keeps the request pending for the manager/director.
@@ -71,14 +80,18 @@ const dateCols: ColumnDef<LeaveRequest>[] = [
     id: "start_date",
     header: "Start Date",
     cell: ({ row }) => (
-      <span className="text-on-surface">{formatDate(row.original.start_date)}</span>
+      <span className="text-on-surface">
+        {formatDate(leaveDateBounds(row.original).start)}
+      </span>
     ),
   },
   {
     id: "end_date",
     header: "End Date",
     cell: ({ row }) => (
-      <span className="text-on-surface">{formatDate(row.original.end_date)}</span>
+      <span className="text-on-surface">
+        {formatDate(leaveDateBounds(row.original).end)}
+      </span>
     ),
   },
   {

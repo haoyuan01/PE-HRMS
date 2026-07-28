@@ -14,16 +14,20 @@ export interface LeaveRequestListResponse {
   pagination: Pagination;
 }
 
+// One leave day. `if_first_half` intentionally matches the backend's spelling.
+export interface LeaveRequestDate {
+  date: string;
+  is_half_day: boolean;
+  if_first_half: boolean;
+}
+
 export interface LeaveRequestPayload {
   manager_approver_uuid: string;
   leave_entitlement_uuid: string;
-  start_date: string;
-  end_date: string;
   resume_date: string;
   total_days: number;
-  is_half_day: boolean;
-  is_first_half: boolean;
   reason: string;
+  request_dates: LeaveRequestDate[];
   handover_by_uuid?: string;
   handover_remark?: string;
 }
@@ -106,18 +110,20 @@ export const leaveRequestApi = {
     const formData = new FormData();
     formData.append("manager_approver_uuid", data.manager_approver_uuid);
     formData.append("leave_entitlement_uuid", data.leave_entitlement_uuid);
-    formData.append("start_date", data.start_date);
-    formData.append("end_date", data.end_date);
     formData.append("resume_date", data.resume_date);
     formData.append("total_days", String(data.total_days));
-    formData.append("is_half_day", data.is_half_day ? "1" : "0");
-    formData.append("is_first_half", data.is_first_half ? "1" : "0");
     formData.append("reason", data.reason);
+    data.request_dates.forEach((d, i) => {
+      formData.append(`request_dates[${i}][date]`, d.date);
+      formData.append(`request_dates[${i}][is_half_day]`, d.is_half_day ? "1" : "0");
+      formData.append(`request_dates[${i}][if_first_half]`, d.if_first_half ? "1" : "0");
+    });
     if (data.handover_by_uuid)
       formData.append("handover_by_uuid", data.handover_by_uuid);
     if (data.handover_remark)
       formData.append("handover_remark", data.handover_remark);
     if (attachment) formData.append("attachment", attachment);
+    formData.append("_method", "POST");
 
     await apiClient.post("/leave-requests", formData, {
       headers: { "Content-Type": "multipart/form-data" },

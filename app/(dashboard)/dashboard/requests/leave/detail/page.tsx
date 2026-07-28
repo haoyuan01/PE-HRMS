@@ -7,7 +7,10 @@ import { format } from "date-fns";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { leaveRequestApi } from "@/lib/api/leaveRequest";
 import { LeaveReviewModal } from "@/components/modules/requests/leave-review-modal";
-import type { LeaveRequestDetail } from "@/types/leave-request";
+import type {
+  LeaveRequestDetail,
+  LeaveRequestDay,
+} from "@/types/leave-request";
 
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
@@ -19,6 +22,20 @@ const LIST_ROUTE = "/dashboard/requests/leave";
 function formatDate(value: string | null) {
   if (!value) return "—";
   return format(new Date(value), "dd MMM yyyy");
+}
+
+// Start/end come from the earliest/latest leave_request_dates entry.
+function leaveDateBounds(dates: LeaveRequestDay[]) {
+  const sorted = (dates ?? [])
+    .map((d) => d.date)
+    .filter(Boolean)
+    .sort();
+  return { start: sorted[0] ?? null, end: sorted[sorted.length - 1] ?? null };
+}
+
+function dayDurationLabel(d: LeaveRequestDay) {
+  if (!d.is_half_day) return "Full Day";
+  return d.is_first_half ? "First Half (AM)" : "Second Half (PM)";
 }
 
 function requestStatus(r: LeaveRequestDetail) {
@@ -151,11 +168,15 @@ function LeaveDetailContent() {
             <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-4">
               <div className="space-y-2">
                 <p className={FIELD_LABEL}>Start Date</p>
-                <div className={FIELD_BOX}>{formatDate(leave.start_date)}</div>
+                <div className={FIELD_BOX}>
+                  {formatDate(leaveDateBounds(leave.leave_request_dates).start)}
+                </div>
               </div>
               <div className="space-y-2">
                 <p className={FIELD_LABEL}>End Date</p>
-                <div className={FIELD_BOX}>{formatDate(leave.end_date)}</div>
+                <div className={FIELD_BOX}>
+                  {formatDate(leaveDateBounds(leave.leave_request_dates).end)}
+                </div>
               </div>
               <div className="space-y-2">
                 <p className={FIELD_LABEL}>Resume Date</p>
@@ -164,8 +185,8 @@ function LeaveDetailContent() {
               <div className="space-y-2">
                 <p className={FIELD_LABEL}>Duration</p>
                 <div className={FIELD_BOX}>
-                  {Number(leave.total_days)}{" "}
-                  {leave.is_half_day ? "Half Day" : "Working Day(s)"}
+                  {Number(leave.total_days)} day
+                  {Number(leave.total_days) === 1 ? "" : "s"}
                 </div>
               </div>
             </div>
@@ -177,6 +198,32 @@ function LeaveDetailContent() {
               </div>
             </div>
           </section>
+
+          {/* Date on Leave — the individual days and their duration config */}
+          {leave.leave_request_dates.length > 0 && (
+            <section className="rounded-2xl bg-surface-container-lowest p-4 shadow-[var(--shadow-ambient)] sm:p-6">
+              <h2 className="font-display text-sm font-semibold text-on-surface">
+                Date on Leave
+              </h2>
+              <div className="mt-4 divide-y divide-outline-variant/20 overflow-hidden rounded-lg border border-outline-variant/20">
+                {[...leave.leave_request_dates]
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map((d) => (
+                    <div
+                      key={d.uuid}
+                      className="flex items-center gap-3 bg-surface-container-low/40 px-4 py-3"
+                    >
+                      <span className="flex-1 text-sm text-on-surface">
+                        {formatDate(d.date)}
+                      </span>
+                      <span className="rounded-md bg-surface-container-lowest px-3 py-1 text-sm text-on-surface-variant">
+                        {dayDurationLabel(d)}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </section>
+          )}
 
           {/* Handover Protocol */}
           {hasHandover && (
