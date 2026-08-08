@@ -1,89 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Loader2 } from "lucide-react";
-import axios from "axios";
-import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ReceiptDropzone } from "@/components/modules/requests/receipt-dropzone";
-import { lookupApi, type LookupItem } from "@/lib/api/lookup";
-import { overtimeApi } from "@/lib/api/overtime";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
+import { useOvertimes } from "@/hooks/useOvertimes";
+import { OvertimeTable } from "@/components/modules/requests/overtime-table";
 
-const FIELD_LABEL =
-  "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
-const FIELD_TRIGGER =
-  "border-0 bg-surface-container-low px-4 py-3 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all w-full rounded-lg text-base md:text-sm h-auto";
-
-const schema = z.object({
-  manager_uuid: z.string().min(1, "Approving manager is required"),
-  description: z.string().min(1, "Remark is required"),
-});
-
-type FormValues = z.infer<typeof schema>;
-
-export default function OvertimeFormPage() {
-  const [isSaving, setIsSaving] = useState(false);
-  const [attachment, setAttachment] = useState<File | null>(null);
-  const [attachmentError, setAttachmentError] = useState(false);
-  const [managers, setManagers] = useState<LookupItem[]>([]);
-
-  useEffect(() => {
-    lookupApi.getManagerApprovers().then(setManagers).catch(() => {});
-  }, []);
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { manager_uuid: "", description: "" },
+export default function OvertimeListPage() {
+  const router = useRouter();
+  const [page, setPage] = useState(1);
+  const { overtimes, pagination, isLoading, error, refetch } = useOvertimes({
+    page,
   });
-
-  const onSubmit = async (data: FormValues) => {
-    if (!attachment) {
-      setAttachmentError(true);
-      toast.error("Please attach a supporting document.");
-      return;
-    }
-    setIsSaving(true);
-    try {
-      await overtimeApi.createOvertime(
-        {
-          description: data.description,
-          manager_approver_uuid: data.manager_uuid,
-        },
-        attachment
-      );
-      toast.success("Overtime request submitted successfully.");
-      reset();
-      setAttachment(null);
-    } catch (err) {
-      const message = axios.isAxiosError(err)
-        ? ((err.response?.data as { message?: unknown } | undefined)
-            ?.message as string | undefined)
-        : undefined;
-      toast.error(
-        typeof message === "string"
-          ? message
-          : "Failed to submit overtime request. Please try again."
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -93,101 +21,66 @@ export default function OvertimeFormPage() {
           Management &middot; Requests
         </p>
         <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-on-surface">
-          Overtime Request
+          Overtime Requests
         </h1>
-        <p className="mt-1 text-sm text-on-surface-variant">
-          Submit your overtime with a remark and supporting document.
-        </p>
       </div>
 
-      {/* Form Card */}
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="rounded-2xl bg-surface-container-lowest p-4 shadow-[var(--shadow-ambient)] sm:p-6"
-      >
-        <div className="grid grid-cols-1 gap-x-6 gap-y-5">
-          {/* Approving Manager */}
-          <div className="space-y-2">
-            <Label className={FIELD_LABEL}>Approving Manager *</Label>
-            <Controller
-              name="manager_uuid"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  items={managers.map((m) => ({ value: m.uuid, label: m.name }))}
-                >
-                  <SelectTrigger className={FIELD_TRIGGER}>
-                    <SelectValue placeholder="Select a manager" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {managers.map((m) => (
-                      <SelectItem key={m.uuid} value={m.uuid} label={m.name}>
-                        {m.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.manager_uuid && (
-              <p className="text-xs text-ds-error">
-                {errors.manager_uuid.message}
-              </p>
-            )}
-          </div>
+      {/* Toolbar */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => router.push("/dashboard/requests/overtime/add")}
+          className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+        >
+          <Plus className="h-4 w-4" />
+          Add New Overtime
+        </button>
+      </div>
 
-          {/* Remark */}
-          <div className="space-y-2">
-            <Label htmlFor="description" className={FIELD_LABEL}>
-              Remark *
-            </Label>
-            <textarea
-              id="description"
-              rows={4}
-              placeholder="Describe the overtime work..."
-              className="w-full rounded-lg border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all"
-              {...register("description")}
-            />
-            {errors.description && (
-              <p className="text-xs text-ds-error">
-                {errors.description.message}
-              </p>
-            )}
+      {/* Table Card */}
+      <div className="rounded-2xl bg-surface-container-lowest shadow-[var(--shadow-ambient)]">
+        {error ? (
+          <div className="p-8">
+            <p className="text-sm text-ds-error">{error}</p>
+            <button
+              onClick={refetch}
+              className="mt-3 text-sm font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
+            >
+              Try again
+            </button>
           </div>
-
-          {/* Attachment */}
-          <div className="space-y-2">
-            <Label className={FIELD_LABEL}>Supporting Document *</Label>
-            <ReceiptDropzone
-              file={attachment}
-              label="Click or drag document here"
-              onChange={(f) => {
-                setAttachment(f);
-                if (f) setAttachmentError(false);
-              }}
+        ) : (
+          <>
+            <OvertimeTable
+              overtimes={overtimes}
+              isLoading={isLoading}
+              onReviewed={refetch}
             />
-            {attachmentError && (
-              <p className="text-xs text-ds-error">
-                A supporting document is required.
-              </p>
+            {pagination && pagination.total > 0 && (
+              <div className="flex flex-col gap-3 border-t border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-on-surface-variant">
+                  Showing {overtimes.length} of {pagination.total} requests
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={pagination.current_page <= 1}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={pagination.current_page >= pagination.last_page}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-6 flex justify-end">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-6 py-3 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Submit
-          </button>
-        </div>
-      </form>
+          </>
+        )}
+      </div>
     </div>
   );
 }

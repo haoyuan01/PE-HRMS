@@ -28,11 +28,16 @@ import { APP_NAME, ROUTES } from "@/lib/constants";
 import { useSidebarStore } from "@/stores/useSidebarStore";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 
+// Employment role flags; an item with `roles` shows only when the user has at
+// least one of them (checked against the auth store, not the permission list).
+type RoleFlag = "manager" | "accountant" | "director";
+
 interface SubNavItem {
   label: string;
   href: string;
   // Permission code required to see this item. Undefined = always visible.
   permission?: string;
+  roles?: RoleFlag[];
 }
 
 interface NavItem {
@@ -41,6 +46,7 @@ interface NavItem {
   icon: React.ElementType;
   // Permission code required to see this item. Undefined = always visible.
   permission?: string;
+  roles?: RoleFlag[];
   children?: SubNavItem[];
 }
 
@@ -53,7 +59,7 @@ const navItems: NavItem[] = [
     children: [
       { label: "Expenses Claim Form", href: "/dashboard/requests/expenses", permission: "claim_header_read" },
       { label: "Leave Form", href: "/dashboard/requests/leave" },
-      { label: "Overtime Form", href: "/dashboard/requests/overtime" },
+      { label: "Overtime Form", href: "/dashboard/requests/overtime", roles: ["accountant", "director"] },
     ],
   },
   { label: "Leave Entitlement", href: "/dashboard/leave", icon: CalendarOff, permission: "leave_entitlement_read" },
@@ -86,7 +92,21 @@ const navItems: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const isManager = useAuthStore((s) => s.isManager);
+  const isAccountant = useAuthStore((s) => s.isAccountant);
+  const isDirector = useAuthStore((s) => s.isDirector);
   const { can } = usePermissions();
+
+  // An item is visible when its permission (if any) is granted and the user has
+  // at least one of its required role flags (if any).
+  const hasRole: Record<RoleFlag, boolean> = {
+    manager: isManager,
+    accountant: isAccountant,
+    director: isDirector,
+  };
+  const isVisible = (item: { permission?: string; roles?: RoleFlag[] }) =>
+    (!item.permission || can(item.permission)) &&
+    (!item.roles || item.roles.some((r) => hasRole[r]));
   const { isCollapsed, toggle, isMobileOpen, setMobileOpen } = useSidebarStore();
   const isDesktop = useIsDesktop();
 
@@ -195,7 +215,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-3">
         {navItems
-          .filter((item) => !item.permission || can(item.permission))
+          .filter(isVisible)
           .map((item) => {
           const hasChildren = !!item.children;
           const isExpanded = expandedMenus.has(item.href);
@@ -260,9 +280,7 @@ export function Sidebar() {
                     <div className="overflow-hidden">
                       <div className="mt-1 ml-4 space-y-0.5 border-l border-outline-variant/20 pl-4">
                         {item.children!
-                          .filter(
-                            (child) => !child.permission || can(child.permission)
-                          )
+                          .filter(isVisible)
                           .map((child) => {
                           const isChildActive = pathname === child.href;
                           return (

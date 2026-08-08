@@ -229,10 +229,10 @@ export function PersonalInformationForm({
             Basic Information
           </h3>
           <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-            {/* Email */}
+            {/* Company Email */}
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="email" className={FIELD_LABEL}>
-                Email *
+                Company Email *
               </Label>
               <Input
                 id="email"
@@ -379,10 +379,10 @@ export function PersonalInformationForm({
               />
             </div>
 
-            {/* Company Email */}
+            {/* Personal Email */}
             <div className="space-y-2">
               <Label htmlFor="company_email" className={FIELD_LABEL}>
-                Company Email
+                Personal Email
               </Label>
               <Input
                 id="company_email"
