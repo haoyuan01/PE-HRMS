@@ -1,13 +1,27 @@
 "use client";
 
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronDown, Plus, Pencil, Trash2, Loader2, FileText } from "lucide-react";
+import {
+  ChevronDown,
+  Plus,
+  Pencil,
+  Trash2,
+  Loader2,
+  FileText,
+  SlidersHorizontal,
+  Search,
+  X,
+} from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useCertificateUsers } from "@/hooks/useCertificateUsers";
 import { certificateApi } from "@/lib/api/certificate";
 import { CertificateFormModal } from "@/components/modules/account/certificate-form-modal";
+import {
+  CertificateFilterModal,
+  type CertificateFilters,
+} from "@/components/modules/certificate/certificate-filter-modal";
 import type { CertificateUser, UserCertificate } from "@/types/certificate";
 
 function formatDate(value: string | null) {
@@ -105,10 +119,80 @@ function DeleteConfirm({
 export function CertificateUsersTable() {
   const { users, isLoading, error, refetch } = useCertificateUsers();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const defaultFilters: CertificateFilters = { department: "all", branch: "all" };
+  const [filters, setFilters] = useState<CertificateFilters>(defaultFilters);
+  const { department, branch } = filters;
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
   // Modals
   const [addFor, setAddFor] = useState<string | null>(null);
   const [edit, setEdit] = useState<{ userUuid: string; cert: UserCertificate } | null>(null);
   const [del, setDel] = useState<UserCertificate | null>(null);
+
+  const isFiltered = department !== "all" || branch !== "all";
+
+  // Department / branch options derived from the loaded users.
+  const departments = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          users
+            .map((u) => u.employment?.department?.name)
+            .filter((n): n is string => !!n)
+        )
+      ).sort(),
+    [users]
+  );
+  const branches = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          users
+            .map((u) => u.employment?.office?.name)
+            .filter((n): n is string => !!n)
+        )
+      ).sort(),
+    [users]
+  );
+
+  const rows = useMemo(
+    () =>
+      users.filter((u) => {
+        if (department !== "all" && u.employment?.department?.name !== department)
+          return false;
+        if (branch !== "all" && u.employment?.office?.name !== branch)
+          return false;
+        const q = search.trim().toLowerCase();
+        if (
+          q &&
+          !(u.personal?.full_name ?? u.email).toLowerCase().includes(q) &&
+          !u.email.toLowerCase().includes(q)
+        )
+          return false;
+        return true;
+      }),
+    [users, department, branch, search]
+  );
+
+  // Chips summarising the applied filters, shown in the toolbar.
+  const activeChips = [
+    department !== "all" ? department : null,
+    branch !== "all" ? branch : null,
+  ].filter((c): c is string => !!c);
+
+  // Reset to the first page whenever the filtered result set changes.
+  useEffect(() => {
+    setPage(1);
+  }, [department, branch, search]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedRows = rows.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
 
   const toggle = (uuid: string) =>
     setExpanded((prev) => {
@@ -132,14 +216,58 @@ export function CertificateUsersTable() {
   }
 
   return (
-    <div className="rounded-2xl bg-surface-container-lowest shadow-[var(--shadow-ambient)]">
-      {isLoading ? (
-        <div className="space-y-3 p-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-lg bg-surface-container-low" />
-          ))}
+    <div className="space-y-4">
+      {/* Search + Filters */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+          <input
+            type="text"
+            placeholder="Search staff name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-9 w-full rounded-lg border-0 bg-surface-container-low pl-9 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-1 focus:ring-ds-primary/30 transition-all"
+          />
         </div>
-      ) : users.length === 0 ? (
+        <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+          {activeChips.map((chip) => (
+            <span
+              key={chip}
+              className="inline-flex items-center rounded-full bg-surface-container-high px-3 py-1 text-xs font-medium text-on-surface-variant"
+            >
+              {chip}
+            </span>
+          ))}
+          {isFiltered && (
+            <button
+              type="button"
+              onClick={() => setFilters(defaultFilters)}
+              className="flex items-center gap-1.5 rounded-lg border border-ds-error/30 px-3 py-2 text-sm font-medium text-ds-error transition-colors hover:bg-ds-error/10"
+            >
+              <X className="h-3.5 w-3.5" />
+              Reset
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen(true)}
+            className="flex items-center gap-2 rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters
+          </button>
+        </div>
+      </div>
+
+      {/* Table Card */}
+      <div className="rounded-2xl bg-surface-container-lowest shadow-[var(--shadow-ambient)]">
+        {isLoading ? (
+          <div className="space-y-3 p-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-16 animate-pulse rounded-lg bg-surface-container-low" />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant">
           <p className="text-sm">No employees found.</p>
         </div>
@@ -166,7 +294,7 @@ export function CertificateUsersTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/20">
-              {users.map((u) => {
+              {pagedRows.map((u) => {
                 const certs = u.certificates ?? [];
                 const isOpen = expanded.has(u.uuid);
                 return (
@@ -304,7 +432,46 @@ export function CertificateUsersTable() {
             </tbody>
           </table>
         </div>
-      )}
+        )}
+        {!error && !isLoading && rows.length > 0 && (
+          <div className="flex flex-col gap-3 border-t border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-on-surface-variant">
+              Showing {pagedRows.length} of {rows.length} staff
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <span className="px-2 text-sm text-on-surface-variant">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <CertificateFilterModal
+        open={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        initialFilters={filters}
+        departments={departments}
+        branches={branches}
+        onApply={(next) => {
+          setFilters(next);
+          setIsFilterOpen(false);
+        }}
+      />
 
       {/* Add */}
       {addFor && (

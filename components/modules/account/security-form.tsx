@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
+import axios from "axios";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
 const changePasscodeSchema = z
   .object({
+    old_passcode: z.string().regex(/^\d{6}$/, "Current PIN must be 6 digits"),
     passcode: z.string().regex(/^\d{6}$/, "PIN must be 6 digits"),
     passcode_confirmation: z.string().min(1, "Please confirm your new PIN"),
   })
@@ -47,6 +49,8 @@ interface PasswordFieldProps {
   error?: string;
   inputMode?: "numeric";
   maxLength?: number;
+  // Optional element rendered on the right of the label row (e.g. a link).
+  action?: React.ReactNode;
   registration: ReturnType<ReturnType<typeof useForm>["register"]>;
 }
 
@@ -58,14 +62,18 @@ function SecretField({
   error,
   inputMode,
   maxLength,
+  action,
   registration,
 }: PasswordFieldProps) {
   const [show, setShow] = useState(false);
   return (
     <div className="space-y-2">
-      <Label htmlFor={id} className={FIELD_LABEL}>
-        {label}
-      </Label>
+      <div className="flex items-center justify-between gap-4">
+        <Label htmlFor={id} className={FIELD_LABEL}>
+          {label}
+        </Label>
+        {action}
+      </div>
       <div className="relative">
         <Input
           id={id}
@@ -97,6 +105,7 @@ interface SecurityFormProps {
 export function SecurityForm({ userUuid }: SecurityFormProps) {
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isSavingPasscode, setIsSavingPasscode] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   const passwordForm = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
@@ -105,7 +114,7 @@ export function SecurityForm({ userUuid }: SecurityFormProps) {
 
   const passcodeForm = useForm<ChangePasscodeFormValues>({
     resolver: zodResolver(changePasscodeSchema),
-    defaultValues: { passcode: "", passcode_confirmation: "" },
+    defaultValues: { old_passcode: "", passcode: "", passcode_confirmation: "" },
   });
 
   const onSubmitPassword = async (data: ChangePasswordFormValues) => {
@@ -127,10 +136,31 @@ export function SecurityForm({ userUuid }: SecurityFormProps) {
       await userApi.changePasscode(userUuid, data);
       toast.success("PIN updated successfully.");
       passcodeForm.reset();
-    } catch {
-      toast.error("Failed to update PIN. Please try again.");
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: unknown } | undefined)?.message
+        : undefined;
+      // A wrong current PIN comes back as 400 "Incorrect passcode" — surface it
+      // on the Current PIN field instead of a toast.
+      if (typeof message === "string") {
+        passcodeForm.setError("old_passcode", { type: "server", message });
+      } else {
+        toast.error("Failed to update PIN. Please try again.");
+      }
     } finally {
       setIsSavingPasscode(false);
+    }
+  };
+
+  const onForgotPasscode = async () => {
+    setIsSendingReset(true);
+    try {
+      await userApi.forgotPasscode();
+      toast.success("A PIN reset link has been sent to your email.");
+    } catch {
+      toast.error("Failed to send reset email. Please try again.");
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -191,6 +221,25 @@ export function SecurityForm({ userUuid }: SecurityFormProps) {
         </h3>
 
         <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+          <SecretField
+            id="old_passcode"
+            label="Current PIN"
+            placeholder="Enter current 6-digit PIN"
+            inputMode="numeric"
+            maxLength={6}
+            error={passcodeForm.formState.errors.old_passcode?.message}
+            registration={passcodeForm.register("old_passcode")}
+            action={
+              <button
+                type="button"
+                onClick={onForgotPasscode}
+                disabled={isSendingReset}
+                className="text-xs font-medium text-ds-primary transition-colors hover:text-ds-primary-dim disabled:opacity-50"
+              >
+                {isSendingReset ? "Sending..." : "Forgot current PIN?"}
+              </button>
+            }
+          />
           <SecretField
             id="passcode"
             label="New PIN"

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search, SlidersHorizontal, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useUsers } from "@/hooks/useUsers";
 import { userApi } from "@/lib/api/user";
+import { lookupApi, type LookupItem } from "@/lib/api/lookup";
 import { UserTable } from "@/components/modules/users/user-table";
 import { UserTablePagination } from "@/components/modules/users/user-table-pagination";
 import { UserFilterModal, type UserFilters } from "@/components/modules/users/user-filter-modal";
@@ -49,6 +50,28 @@ export default function UserManagementPage() {
     [users, currentUserUuid]
   );
 
+  // Lookups used to label the active-filter chips (filters store UUIDs).
+  const [departments, setDepartments] = useState<LookupItem[]>([]);
+  const [positions, setPositions] = useState<LookupItem[]>([]);
+  useEffect(() => {
+    lookupApi.getDepartments().then(setDepartments).catch(() => {});
+    lookupApi.getPositions().then(setPositions).catch(() => {});
+  }, []);
+
+  const activeChips = [
+    departments.find((d) => d.uuid === filters.department)?.name,
+    positions.find((p) => p.uuid === filters.position)?.name,
+  ].filter((c): c is string => !!c);
+
+  // Apply the search live (debounced) so users don't need to press Enter.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearch(searchInput);
@@ -90,6 +113,16 @@ export default function UserManagementPage() {
             <SlidersHorizontal className="h-4 w-4" />
             Filters
           </button>
+
+          {/* Active filter chips */}
+          {activeChips.map((chip) => (
+            <span
+              key={chip}
+              className="inline-flex items-center rounded-full bg-surface-container-high px-3 py-1 text-xs font-medium text-on-surface-variant"
+            >
+              {chip}
+            </span>
+          ))}
 
           {/* Reset Filters — only visible when filters are active */}
           {(filters.department || filters.position) && (

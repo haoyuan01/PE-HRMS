@@ -284,4 +284,10 @@ export const userApi = {
   changePasscode: async (uuid: string, data: ChangePasscodeRequest): Promise<void> => {
     await apiClient.patch(`/users/${uuid}/passcode`, data);
   },
+
+  // Emails the current (authenticated) user a link to reset their PIN when they
+  // no longer know their old passcode.
+  forgotPasscode: async (): Promise<void> => {
+    await apiClient.post("/auth/forgot-passcode-email");
+  },
 };

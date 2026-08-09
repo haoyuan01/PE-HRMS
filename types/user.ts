@@ -115,6 +115,7 @@ export interface ChangePasswordRequest {
 }
 
 export interface ChangePasscodeRequest {
+  old_passcode: string;
   passcode: string;
   passcode_confirmation: string;
 }
