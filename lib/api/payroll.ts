@@ -44,4 +44,27 @@ export const payrollApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+
+  updatePayroll: async (
+    uuid: string,
+    data: Omit<CreatePayrollPayload, "user_uuid">,
+    attachment?: File
+  ): Promise<void> => {
+    const formData = new FormData();
+    formData.append("_method", "PUT");
+    formData.append("month", String(data.month));
+    formData.append("year", String(data.year));
+    formData.append("remark", data.remark);
+    formData.append("is_published", data.is_published ? "1" : "0");
+    if (attachment) formData.append("attachment", attachment);
+
+    await apiClient.post(`/payrolls/${uuid}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  // Soft-delete — deactivates the payroll record.
+  deletePayroll: async (uuid: string): Promise<void> => {
+    await apiClient.patch(`/payrolls/${uuid}`, { is_active: false });
+  },
 };

@@ -1,9 +1,11 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronDown, FileText, Download, Plus, SlidersHorizontal, X, Search } from "lucide-react";
+import { ChevronDown, FileText, Download, Plus, SlidersHorizontal, X, Search, Trash2, Pencil, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { usePayrollUsers } from "@/hooks/usePayrollUsers";
+import { payrollApi } from "@/lib/api/payroll";
 import { PayslipFormModal } from "@/components/modules/payslip/payslip-form-modal";
 import {
   PayslipFilterModal,
@@ -50,6 +52,67 @@ function Avatar({ user }: { user: PayrollUser }) {
   );
 }
 
+function DeleteConfirm({
+  payroll,
+  period,
+  onClose,
+  onDeleted,
+}: {
+  payroll: PayrollItem;
+  period: string;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const remove = async () => {
+    setIsDeleting(true);
+    try {
+      await payrollApi.deletePayroll(payroll.uuid);
+      toast.success("Payslip deleted.");
+      onDeleted();
+    } catch {
+      toast.error("Failed to delete payslip.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+  return (
+    <div
+      ref={overlayRef}
+      onClick={(e) => e.target === overlayRef.current && onClose()}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-surface-container-lowest p-6 shadow-[var(--shadow-ambient)]">
+        <h2 className="font-display text-lg font-bold text-on-surface">
+          Delete Payslip
+        </h2>
+        <p className="mt-2 text-sm text-on-surface-variant">
+          Are you sure you want to delete the payslip for{" "}
+          <span className="font-medium text-on-surface">{period}</span>?
+        </p>
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={remove}
+            disabled={isDeleting}
+            className="flex items-center gap-2 rounded-lg bg-ds-error px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {isDeleting && <Loader2 className="h-4 w-4 animate-spin" />}
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PayrollStaffList() {
   const now = new Date();
   const defaultFilters: PayslipFilters = {
@@ -66,6 +129,12 @@ export function PayrollStaffList() {
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [addFor, setAddFor] = useState<PayrollUser | null>(null);
+  const [del, setDel] = useState<{ payroll: PayrollItem; period: string } | null>(
+    null
+  );
+  const [edit, setEdit] = useState<{ user: PayrollUser; payroll: PayrollItem } | null>(
+    null
+  );
   const PAGE_SIZE = 10;
 
   const isFiltered =
@@ -334,21 +403,26 @@ export function PayrollStaffList() {
                                       <th className="px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                         Status
                                       </th>
-                                      <th className="py-2 pl-4 pr-6 text-center text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                      <th className="px-4 py-2 text-center text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                         Remark
+                                      </th>
+                                      <th className="py-2 pl-4 pr-6 text-right text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                        Action
                                       </th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-outline-variant/20">
-                                    {payrolls.map((p) => (
+                                    {payrolls.map((p) => {
+                                      const rowPeriod = p.month
+                                        ? `${MONTHS[Number(p.month) - 1] ?? p.month} ${p.year ?? year}`
+                                        : periodLabel;
+                                      return (
                                       <tr
                                         key={p.uuid}
                                         className="bg-surface-container-lowest"
                                       >
                                         <td className="py-2.5 pl-6 pr-4 text-xs font-medium text-on-surface">
-                                          {p.month
-                                            ? `${MONTHS[Number(p.month) - 1] ?? p.month} ${p.year ?? year}`
-                                            : periodLabel}
+                                          {rowPeriod}
                                         </td>
                                         <td className="px-4 py-2.5 text-xs">
                                           {p.attachment_path ? (
@@ -380,11 +454,34 @@ export function PayrollStaffList() {
                                               : "Not Published"}
                                           </span>
                                         </td>
-                                        <td className="py-2.5 pl-4 pr-6 text-center text-xs text-on-surface-variant">
+                                        <td className="px-4 py-2.5 text-center text-xs text-on-surface-variant">
                                           {p.remark || "—"}
                                         </td>
+                                        <td className="py-2.5 pl-4 pr-6 text-right">
+                                          <div className="flex items-center justify-end gap-1">
+                                            <button
+                                              onClick={() =>
+                                                setEdit({ user: u, payroll: p })
+                                              }
+                                              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                                              title="Edit"
+                                            >
+                                              <Pencil className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                              onClick={() =>
+                                                setDel({ payroll: p, period: rowPeriod })
+                                              }
+                                              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+                                              title="Delete"
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </button>
+                                          </div>
+                                        </td>
                                       </tr>
-                                    ))}
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               ) : (
@@ -444,6 +541,18 @@ export function PayrollStaffList() {
         )}
       </div>
 
+      {del && (
+        <DeleteConfirm
+          payroll={del.payroll}
+          period={del.period}
+          onClose={() => setDel(null)}
+          onDeleted={() => {
+            setDel(null);
+            refetch();
+          }}
+        />
+      )}
+
       <PayslipFilterModal
         open={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
@@ -466,6 +575,21 @@ export function PayrollStaffList() {
           onClose={() => setAddFor(null)}
           onSaved={() => {
             setAddFor(null);
+            refetch();
+          }}
+        />
+      )}
+
+      {edit && (
+        <PayslipFormModal
+          userUuid={edit.user.uuid}
+          userName={edit.user.personal?.full_name ?? edit.user.email}
+          defaultMonth={month || now.getMonth() + 1}
+          defaultYear={year || now.getFullYear()}
+          payroll={edit.payroll}
+          onClose={() => setEdit(null)}
+          onSaved={() => {
+            setEdit(null);
             refetch();
           }}
         />

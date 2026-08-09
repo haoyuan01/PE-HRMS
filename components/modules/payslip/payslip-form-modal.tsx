@@ -5,11 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import axios from "axios";
-import { Loader2, X } from "lucide-react";
+import { FileText, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { ReceiptDropzone } from "@/components/modules/requests/receipt-dropzone";
 import { payrollApi } from "@/lib/api/payroll";
+import type { PayrollItem } from "@/types/payroll";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -35,6 +36,8 @@ interface PayslipFormModalProps {
   userName: string;
   defaultMonth: number;
   defaultYear: number;
+  // When provided, the modal edits this payslip instead of creating one.
+  payroll?: PayrollItem;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -44,12 +47,17 @@ export function PayslipFormModal({
   userName,
   defaultMonth,
   defaultYear,
+  payroll,
   onClose,
   onSaved,
 }: PayslipFormModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [existingCleared, setExistingCleared] = useState(false);
+  const isEdit = !!payroll;
+  const showExisting =
+    !!payroll?.attachment_path && !attachment && !existingCleared;
 
   const years = Array.from(
     { length: 6 },
@@ -63,30 +71,41 @@ export function PayslipFormModal({
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      month: String(defaultMonth),
-      year: String(defaultYear),
-      remark: "",
-      is_published: true,
+      month: String(payroll?.month ?? defaultMonth),
+      year: String(payroll?.year ?? defaultYear),
+      remark: payroll?.remark ?? "",
+      is_published: payroll ? payroll.is_published !== false : true,
     },
   });
 
   const onSubmit = async (data: FormValues) => {
-    if (!attachment) {
+    // A new file is required when creating; on edit the existing file is kept
+    // unless replaced.
+    if (!isEdit && !attachment) {
       setAttachmentError("A payslip file is required.");
       return;
     }
+    const payload = {
+      month: Number(data.month),
+      year: Number(data.year),
+      remark: data.remark,
+      is_published: data.is_published,
+    };
     try {
-      await payrollApi.createPayroll(
-        {
-          user_uuid: userUuid,
-          month: Number(data.month),
-          year: Number(data.year),
-          remark: data.remark,
-          is_published: data.is_published,
-        },
-        attachment
-      );
-      toast.success("Payslip added successfully.");
+      if (payroll) {
+        await payrollApi.updatePayroll(
+          payroll.uuid,
+          payload,
+          attachment ?? undefined
+        );
+        toast.success("Payslip updated successfully.");
+      } else {
+        await payrollApi.createPayroll(
+          { user_uuid: userUuid, ...payload },
+          attachment as File
+        );
+        toast.success("Payslip added successfully.");
+      }
       onSaved();
     } catch (err) {
       const message = axios.isAxiosError(err)
@@ -96,7 +115,7 @@ export function PayslipFormModal({
       toast.error(
         typeof message === "string"
           ? message
-          : "Failed to add payslip. Please try again."
+          : `Failed to ${isEdit ? "update" : "add"} payslip. Please try again.`
       );
     }
   };
@@ -115,7 +134,7 @@ export function PayslipFormModal({
         <div className="flex items-center justify-between border-b border-outline-variant/20 px-6 py-4">
           <div>
             <h2 className="font-display text-lg font-bold text-on-surface">
-              Create New Payslip
+              {isEdit ? "Edit Payslip" : "Create New Payslip"}
             </h2>
             <p className="text-xs text-on-surface-variant">For {userName}</p>
           </div>
@@ -179,15 +198,41 @@ export function PayslipFormModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label className={FIELD_LABEL}>Payslip File *</Label>
-            <ReceiptDropzone
-              file={attachment}
-              label="Click or drag payslip file here"
-              onChange={(f) => {
-                setAttachment(f);
-                if (f) setAttachmentError(null);
-              }}
-            />
+            <Label className={FIELD_LABEL}>
+              Payslip File {isEdit ? "" : "*"}
+            </Label>
+            {showExisting ? (
+              <div className="flex items-center justify-between rounded-lg border border-outline-variant/30 bg-surface-container-low px-4 py-3">
+                <a
+                  href={payroll!.attachment_path!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-w-0 items-center gap-3"
+                >
+                  <FileText className="h-5 w-5 shrink-0 text-ds-primary" />
+                  <span className="truncate text-sm text-ds-primary">
+                    {payroll!.attachment_name || "Attachment"}
+                  </span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setExistingCleared(true)}
+                  className="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                  aria-label="Remove attachment"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <ReceiptDropzone
+                file={attachment}
+                label="Click or drag payslip file here"
+                onChange={(f) => {
+                  setAttachment(f);
+                  if (f) setAttachmentError(null);
+                }}
+              />
+            )}
             {attachmentError && (
               <p className="text-xs text-ds-error">{attachmentError}</p>
             )}
@@ -223,7 +268,7 @@ export function PayslipFormModal({
             className="flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-6 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Add Payslip
+            {isEdit ? "Save Changes" : "Add Payslip"}
           </button>
         </div>
       </form>

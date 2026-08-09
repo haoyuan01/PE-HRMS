@@ -30,8 +30,9 @@ export function PayrollMyList() {
 
   const payrolls = useMemo(() => {
     const me = users.find((u) => u.uuid === userUuid) ?? users[0];
+    // Employees only see published payslips; unpublished ones stay in Staff List.
     return (me?.payrolls ?? [])
-      .slice()
+      .filter(isPublished)
       .sort(
         (a, b) =>
           Number(b.year ?? 0) - Number(a.year ?? 0) ||

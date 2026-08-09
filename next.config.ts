@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
         protocol: "http",
         hostname: "havyh.xyz",
       },
+      {
+        protocol: "https",
+        hostname: "peachpuff-seal-112546.hostingersite.com",
+      },
     ],
   },
 };
