@@ -50,4 +50,6 @@ export const lookupApi = {
     cachedGet("managerApprovers", "/lookup/manager-approvers?search_words[]="),
   getUsers: (): Promise<LookupItem[]> =>
     cachedGet("users", "/lookup/users?search_words[]="),
+  getMovementTypes: (): Promise<LookupItem[]> =>
+    cachedGet("movementTypes", "/lookup/movement-types?search_words[]="),
 };
