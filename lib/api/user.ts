@@ -285,6 +285,18 @@ export const userApi = {
     await apiClient.patch(`/users/${uuid}/passcode`, data);
   },
 
+  // Verifies the current user's PIN (used to gate sensitive views like payslips).
+  // Throws when the passcode is incorrect.
+  checkPasscode: async (passcode: string): Promise<void> => {
+    const response = await apiClient.post<{ success?: boolean; message?: string }>(
+      "/auth/check-passcode",
+      { passcode }
+    );
+    if (response.data?.success === false) {
+      throw new Error(response.data.message || "Incorrect PIN");
+    }
+  },
+
   // Emails the current (authenticated) user a link to reset their PIN when they
   // no longer know their old passcode.
   forgotPasscode: async (): Promise<void> => {

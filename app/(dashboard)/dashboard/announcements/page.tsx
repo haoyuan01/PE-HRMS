@@ -1,19 +1,19 @@
-import { UpcomingEventList } from "@/components/modules/events/upcoming-event-list";
+import { AnnouncementList } from "@/components/modules/announcements/announcement-list";
 
-export default function UpcomingEventsPage() {
+export default function AnnouncementPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface">
-          Upcoming Events
+          Announcement
         </h1>
         <p className="mt-1 text-sm text-on-surface-variant">
-          View scheduled events and important dates.
+          Create and manage company announcements.
         </p>
       </div>
 
-      <UpcomingEventList />
+      <AnnouncementList />
     </div>
   );
 }

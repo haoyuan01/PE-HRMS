@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Download, Wallet } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePayrollUsers } from "@/hooks/usePayrollUsers";
+import { PayslipPinModal } from "@/components/modules/payslip/payslip-pin-modal";
 import type { PayrollItem } from "@/types/payroll";
 
 const MONTHS = [
@@ -27,6 +28,9 @@ export function PayrollMyList() {
   const { users, isLoading, error, refetch } = usePayrollUsers({
     user_uuid: userUuid,
   });
+
+  // The attachment to open once the PIN is verified.
+  const [pinUrl, setPinUrl] = useState<string | null>(null);
 
   const payrolls = useMemo(() => {
     const me = users.find((u) => u.uuid === userUuid) ?? users[0];
@@ -96,15 +100,13 @@ export function PayrollMyList() {
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {p.attachment_path ? (
-                      <a
-                        href={p.attachment_path}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => setPinUrl(p.attachment_path ?? null)}
                         className="inline-flex items-center gap-1.5 font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
                       >
                         <Download className="h-4 w-4" />
                         View
-                      </a>
+                      </button>
                     ) : (
                       <span className="text-on-surface-variant">—</span>
                     )}
@@ -128,6 +130,16 @@ export function PayrollMyList() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {pinUrl && (
+        <PayslipPinModal
+          onClose={() => setPinUrl(null)}
+          onVerified={() => {
+            window.open(pinUrl, "_blank", "noopener,noreferrer");
+            setPinUrl(null);
+          }}
+        />
       )}
     </div>
   );

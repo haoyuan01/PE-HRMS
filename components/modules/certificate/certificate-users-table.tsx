@@ -16,6 +16,7 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useCertificateUsers } from "@/hooks/useCertificateUsers";
+import { usePermissions } from "@/hooks/usePermissions";
 import { certificateApi } from "@/lib/api/certificate";
 import { CertificateFormModal } from "@/components/modules/account/certificate-form-modal";
 import {
@@ -118,6 +119,10 @@ function DeleteConfirm({
 
 export function CertificateUsersTable() {
   const { users, isLoading, error, refetch } = useCertificateUsers();
+  const { can } = usePermissions();
+  const canCreate = can("user_certificate_create");
+  const canUpdate = can("user_certificate_update");
+  const canDelete = can("user_certificate_delete");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const defaultFilters: CertificateFilters = { department: "all", branch: "all" };
   const [filters, setFilters] = useState<CertificateFilters>(defaultFilters);
@@ -337,22 +342,22 @@ export function CertificateUsersTable() {
                         <td colSpan={5} className="px-6 py-4">
                           <div className="overflow-hidden rounded-lg border border-outline-variant/20 bg-surface-container-lowest">
                             {certs.length > 0 && (
-                              <table className="w-full">
+                              <table className="w-full table-fixed">
                                 <thead>
                                   <tr className="border-b border-outline-variant/20 bg-surface-container-low/60">
-                                    <th className="px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[24%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Certificate
                                     </th>
-                                    <th className="px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[24%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Organization
                                     </th>
-                                    <th className="px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[20%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Date Applied
                                     </th>
-                                    <th className="px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[20%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Valid Until
                                     </th>
-                                    <th className="px-4 py-2 text-right text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[12%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Action
                                     </th>
                                   </tr>
@@ -368,15 +373,15 @@ export function CertificateUsersTable() {
                                               target="_blank"
                                               rel="noopener noreferrer"
                                               title="View file"
-                                              className="text-ds-primary hover:text-ds-primary-dim"
+                                              className="shrink-0 text-ds-primary hover:text-ds-primary-dim"
                                             >
                                               <FileText className="h-4 w-4" />
                                             </a>
                                           )}
-                                          {c.name}
+                                          <span className="truncate">{c.name}</span>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-2.5 text-xs text-on-surface-variant">
+                                      <td className="truncate px-4 py-2.5 text-xs text-on-surface-variant">
                                         {c.organization || "—"}
                                       </td>
                                       <td className="px-4 py-2.5 text-xs text-on-surface">
@@ -385,8 +390,9 @@ export function CertificateUsersTable() {
                                       <td className="px-4 py-2.5 text-xs text-on-surface">
                                         {formatDate(c.valid_until)}
                                       </td>
-                                      <td className="px-4 py-2.5 text-right">
-                                        <div className="flex items-center justify-end gap-1">
+                                      <td className="px-4 py-2.5">
+                                        <div className="flex items-center gap-1">
+                                          {canUpdate && (
                                           <button
                                             onClick={() =>
                                               setEdit({ userUuid: u.uuid, cert: c })
@@ -396,6 +402,8 @@ export function CertificateUsersTable() {
                                           >
                                             <Pencil className="h-4 w-4" />
                                           </button>
+                                          )}
+                                          {canDelete && (
                                           <button
                                             onClick={() => setDel(c)}
                                             className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
@@ -403,6 +411,7 @@ export function CertificateUsersTable() {
                                           >
                                             <Trash2 className="h-4 w-4" />
                                           </button>
+                                          )}
                                         </div>
                                       </td>
                                     </tr>
@@ -411,6 +420,7 @@ export function CertificateUsersTable() {
                               </table>
                             )}
                             {/* Full-width add line */}
+                            {canCreate && (
                             <button
                               onClick={() => setAddFor(u.uuid)}
                               className={`flex w-full items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-ds-primary transition-colors hover:bg-surface-container-low ${
@@ -422,6 +432,7 @@ export function CertificateUsersTable() {
                               <Plus className="h-3.5 w-3.5" />
                               Add New Certificate
                             </button>
+                            )}
                           </div>
                         </td>
                       </tr>

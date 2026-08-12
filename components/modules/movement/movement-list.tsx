@@ -6,6 +6,7 @@ import { Search, SlidersHorizontal, X, Plus, Pencil, Trash2, Loader2 } from "luc
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useMovements } from "@/hooks/useMovements";
+import { usePermissions } from "@/hooks/usePermissions";
 import { movementApi } from "@/lib/api/movement";
 import { lookupApi, type LookupItem } from "@/lib/api/lookup";
 import {
@@ -118,6 +119,10 @@ function Avatar({ user }: { user: MovementUser | null }) {
 }
 
 export function MovementList() {
+  const { can } = usePermissions();
+  const canCreate = can("movement_create");
+  const canUpdate = can("movement_update");
+  const canDelete = can("movement_delete");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<MovementFilters>(EMPTY_FILTERS);
@@ -229,14 +234,16 @@ export function MovementList() {
             <SlidersHorizontal className="h-4 w-4" />
             Filters
           </button>
-          <button
-            type="button"
-            onClick={() => setIsAddOpen(true)}
-            className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            New Movement
-          </button>
+          {canCreate && (
+            <button
+              type="button"
+              onClick={() => setIsAddOpen(true)}
+              className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              New Movement
+            </button>
+          )}
         </div>
       </div>
 
@@ -285,7 +292,7 @@ export function MovementList() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                     Location
                   </th>
-                  <th className="py-3 pl-4 pr-6 text-right text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                  <th className="py-3 pl-4 pr-6 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                     Action
                   </th>
                 </tr>
@@ -321,22 +328,26 @@ export function MovementList() {
                     <td className="px-4 py-3 text-sm text-on-surface-variant">
                       {m.location || "—"}
                     </td>
-                    <td className="py-3 pl-4 pr-6 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => setEdit(m)}
-                          className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
-                          title="Edit"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setDel(m)}
-                          className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                    <td className="py-3 pl-4 pr-6">
+                      <div className="flex items-center gap-1">
+                        {canUpdate && (
+                          <button
+                            onClick={() => setEdit(m)}
+                            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                            title="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => setDel(m)}
+                            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
