@@ -14,6 +14,18 @@ export interface UpcomingEventParams {
 }
 
 export const upcomingEventApi = {
+  // Events for the dashboard banner. relevant_to_me scopes to the current user's
+  // department/office.
+  getDashboardUpcomingEvents: async (
+    relevantToMe = true
+  ): Promise<UpcomingEvent[]> => {
+    const response = await apiClient.get<UpcomingEventListResponse>(
+      "/dashboards/upcoming-events",
+      { params: { relevant_to_me: relevantToMe ? 1 : 0 } }
+    );
+    return response.data.data ?? [];
+  },
+
   getUpcomingEvents: async (
     params?: UpcomingEventParams
   ): Promise<{ events: UpcomingEvent[]; pagination: Pagination | null }> => {

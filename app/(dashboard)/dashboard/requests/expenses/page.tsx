@@ -24,6 +24,12 @@ export default function ExpensesClaimFormPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
+  // Open the tab requested via the URL (e.g. ?tab=staff from the dashboard).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "staff" || t === "my") setTab(t);
+  }, []);
+
   // Force My List when the user can't view the Staff List.
   const effectiveTab: Tab = canViewStaff ? tab : "my";
 

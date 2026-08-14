@@ -22,6 +22,13 @@ export default function LeaveFormPage() {
 
   const [tab, setTab] = useState<Tab>("my");
   const [page, setPage] = useState(1);
+
+  // Open the tab requested via the URL (e.g. ?tab=staff from the dashboard).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "staff" || t === "my") setTab(t);
+  }, []);
+
   const effectiveTab: Tab = canViewStaff ? tab : "my";
 
   // My List filters to the current user's own requests. Staff List shows the
