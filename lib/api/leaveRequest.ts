@@ -129,4 +129,36 @@ export const leaveRequestApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+
+  // Downloads the leave requests as an Excel file. Omitting relevant_to_me
+  // exports the staff list; passing it exports the current user's own ("My").
+  exportExcel: async (params: {
+    created_from?: string;
+    created_to?: string;
+    relevant_to_me?: boolean;
+  }): Promise<void> => {
+    const response = await apiClient.get("/leave-requests/export-excel", {
+      params: {
+        ...(params.created_from ? { created_from: params.created_from } : {}),
+        ...(params.created_to ? { created_to: params.created_to } : {}),
+        ...(params.relevant_to_me ? { relevant_to_me: 1 } : {}),
+      },
+      responseType: "blob",
+    });
+
+    const disposition = response.headers["content-disposition"] as
+      | string
+      | undefined;
+    const match = disposition?.match(/filename="?([^"]+)"?/i);
+    const filename = match?.[1] ?? "leave-requests.xlsx";
+
+    const url = URL.createObjectURL(response.data as Blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
 };

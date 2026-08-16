@@ -52,6 +52,25 @@ async function proxyRequest(request: NextRequest) {
     }
   );
 
+  const resContentType = apiRes.headers.get("content-type") ?? "";
+
+  // Non-JSON responses (e.g. Excel/file exports) are passed through untouched so
+  // the client receives the raw bytes for download.
+  if (!resContentType.includes("application/json")) {
+    const buffer = await apiRes.arrayBuffer();
+    const passHeaders = new Headers();
+    passHeaders.set(
+      "Content-Type",
+      resContentType || "application/octet-stream"
+    );
+    const disposition = apiRes.headers.get("content-disposition");
+    if (disposition) passHeaders.set("Content-Disposition", disposition);
+    return new NextResponse(buffer, {
+      status: apiRes.status,
+      headers: passHeaders,
+    });
+  }
+
   const data = await apiRes.json();
   return NextResponse.json(data, { status: apiRes.status });
 }

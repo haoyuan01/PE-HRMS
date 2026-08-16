@@ -6,7 +6,9 @@ import { Plus, Download, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useClaimHeaders } from "@/hooks/useClaimHeaders";
+import { claimApi } from "@/lib/api/claim";
 import { ClaimTable } from "@/components/modules/requests/claim-table";
+import { ExportModal } from "@/components/modules/requests/export-modal";
 
 type Tab = "my" | "staff";
 
@@ -23,6 +25,7 @@ export default function ExpensesClaimFormPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   // Open the tab requested via the URL (e.g. ?tab=staff from the dashboard).
   useEffect(() => {
@@ -134,29 +137,28 @@ export default function ExpensesClaimFormPage() {
           />
         </form>
 
-        {/* Add New Request */}
-        <button
-          onClick={() => router.push("/dashboard/requests/expenses/add")}
-          className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          Create New Claim
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Export */}
+          <button
+            onClick={() => setIsExportOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+          >
+            <Download className="h-4 w-4" />
+            Export
+          </button>
+          {/* Add New Request */}
+          <button
+            onClick={() => router.push("/dashboard/requests/expenses/add")}
+            className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Create New Claim
+          </button>
+        </div>
       </div>
 
       {/* Table Card */}
       <div className="rounded-2xl bg-surface-container-lowest shadow-[var(--shadow-ambient)]">
-        {/* Export */}
-        <div className="flex justify-end pl-4 pr-6 pt-4 pb-3">
-          <button
-            onClick={() => toast.info("Exporting data is coming soon.")}
-            className="flex items-center gap-2 text-sm font-medium text-on-surface-variant transition-colors hover:text-on-surface"
-          >
-            <Download className="h-4 w-4" />
-            Export Data
-          </button>
-        </div>
-
         {error ? (
           <div className="p-8">
             <p className="text-sm text-ds-error">{error}</p>
@@ -202,6 +204,26 @@ export default function ExpensesClaimFormPage() {
           </>
         )}
       </div>
+
+      {isExportOpen && (
+        <ExportModal
+          title="Export Claims"
+          onClose={() => setIsExportOpen(false)}
+          onExport={async ({ from, to }) => {
+            try {
+              await claimApi.exportExcel({
+                created_from: from,
+                created_to: to,
+                relevant_to_me: effectiveTab === "my",
+              });
+              toast.success("Export downloaded.");
+            } catch {
+              toast.error("Failed to export. Please try again.");
+              throw new Error("export failed");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

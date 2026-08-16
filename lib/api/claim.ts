@@ -121,4 +121,36 @@ export const claimApi = {
     );
     return response.data;
   },
+
+  // Downloads the claims as an Excel file for the given created date range.
+  // Passing relevant_to_me exports the current user's own claims ("My List").
+  exportExcel: async (params: {
+    created_from?: string;
+    created_to?: string;
+    relevant_to_me?: boolean;
+  }): Promise<void> => {
+    const response = await apiClient.get("/claim-headers/export-excel", {
+      params: {
+        ...(params.created_from ? { created_from: params.created_from } : {}),
+        ...(params.created_to ? { created_to: params.created_to } : {}),
+        ...(params.relevant_to_me ? { relevant_to_me: 1 } : {}),
+      },
+      responseType: "blob",
+    });
+
+    const disposition = response.headers["content-disposition"] as
+      | string
+      | undefined;
+    const match = disposition?.match(/filename="?([^"]+)"?/i);
+    const filename = match?.[1] ?? "claim-headers.xlsx";
+
+    const url = URL.createObjectURL(response.data as Blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
 };

@@ -2,12 +2,14 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
+import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useLeaveRequests } from "@/hooks/useLeaveRequests";
 import { leaveRequestApi } from "@/lib/api/leaveRequest";
 import { LeaveStatusCards } from "@/components/modules/requests/leave-status-cards";
 import { LeaveRequestTable } from "@/components/modules/requests/leave-request-table";
+import { ExportModal } from "@/components/modules/requests/export-modal";
 import type { LeaveStatusSummary } from "@/types/leave-request";
 
 type Tab = "my" | "staff";
@@ -22,6 +24,7 @@ export default function LeaveFormPage() {
 
   const [tab, setTab] = useState<Tab>("my");
   const [page, setPage] = useState(1);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   // Open the tab requested via the URL (e.g. ?tab=staff from the dashboard).
   useEffect(() => {
@@ -114,13 +117,22 @@ export default function LeaveFormPage() {
         ) : (
           <div />
         )}
-        <button
-          onClick={() => router.push("/dashboard/requests/leave/add")}
-          className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          Create New Leave
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsExportOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+          >
+            <Download className="h-4 w-4" />
+            Export
+          </button>
+          <button
+            onClick={() => router.push("/dashboard/requests/leave/add")}
+            className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Create New Leave
+          </button>
+        </div>
       </div>
 
       {/* Status summary cards — managers/directors only */}
@@ -176,6 +188,25 @@ export default function LeaveFormPage() {
           </>
         )}
       </div>
+
+      {isExportOpen && (
+        <ExportModal
+          title="Export Leave Requests"
+          onClose={() => setIsExportOpen(false)}
+          onExport={async ({ from, to }) => {
+            try {
+              await leaveRequestApi.exportExcel({
+                created_from: from,
+                created_to: to,
+              });
+              toast.success("Export downloaded.");
+            } catch {
+              toast.error("Failed to export. Please try again.");
+              throw new Error("export failed");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
