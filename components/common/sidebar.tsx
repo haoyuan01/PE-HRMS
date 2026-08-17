@@ -87,8 +87,6 @@ const navItems: NavItem[] = [
       { label: "Branch Office", href: "/dashboard/configuration/branch-office", permission: "office_read" },
       { label: "Movement Type", href: "/dashboard/configuration/movement-type" },
       { label: "Leave Policy", href: "/dashboard/configuration/leave-policy", permission: "leave_policy_read" },
-      { label: "System", href: "/dashboard/configuration/system" },
-      { label: "Audit Log", href: "/dashboard/configuration/audit-log", permission: "activity_log_read" },
     ],
   },
 ];

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Search, SlidersHorizontal, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { Search, Plus } from "lucide-react";
 import { useLeavePolicies } from "@/hooks/useLeavePolicies";
 import { usePermissions } from "@/hooks/usePermissions";
 import { LeavePolicyTable } from "@/components/modules/configuration/leave-policy-table";
@@ -70,13 +69,6 @@ export default function LeavePolicyPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => toast.info("Filters are coming soon.")}
-            className="flex items-center justify-center gap-2 rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            Filter
-          </button>
           {canCreate && (
             <button
               onClick={() => setForm({ policy: null })}
