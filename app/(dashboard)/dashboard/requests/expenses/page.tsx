@@ -57,6 +57,9 @@ export default function ExpensesClaimFormPage() {
         ? { manager_approver_uuid: currentUserUuid }
         : {}),
       ...(search ? { name: search } : {}),
+      // Newest claims first.
+      sortBy: "created_at",
+      orderBy: "desc",
     };
   }, [effectiveTab, page, currentUserUuid, isDirector, search]);
 

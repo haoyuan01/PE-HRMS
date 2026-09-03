@@ -11,6 +11,8 @@ interface UseClaimHeadersParams {
   manager_approver_uuid?: string;
   is_director?: boolean;
   name?: string;
+  sortBy?: string;
+  orderBy?: string;
 }
 
 export function useClaimHeaders(params: UseClaimHeadersParams = {}) {
@@ -38,6 +40,8 @@ export function useClaimHeaders(params: UseClaimHeadersParams = {}) {
     params.manager_approver_uuid,
     params.is_director,
     params.name,
+    params.sortBy,
+    params.orderBy,
   ]);
 
   useEffect(() => {

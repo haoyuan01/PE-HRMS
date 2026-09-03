@@ -53,6 +53,35 @@ function fileName(path: string) {
   return path.split("/").pop() ?? path;
 }
 
+// The manager's decision on an item, shown to the General Manager so they
+// review with the first-stage outcome in view.
+function ManagerDecisionBanner({
+  approved,
+  name,
+}: {
+  approved: boolean;
+  name: string;
+}) {
+  return (
+    <div
+      className={`mt-4 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium ${
+        approved
+          ? "bg-emerald-500/10 text-emerald-600"
+          : "bg-ds-error/10 text-ds-error"
+      }`}
+    >
+      {approved ? (
+        <Check className="h-4 w-4 shrink-0" />
+      ) : (
+        <X className="h-4 w-4 shrink-0" />
+      )}
+      <span>
+        {approved ? "Approved" : "Rejected"} by {name}
+      </span>
+    </div>
+  );
+}
+
 // Per-item outcome badge, shared by the manager and director review flows.
 function ReviewOutcome({ approved }: { approved: boolean }) {
   return (
@@ -331,21 +360,35 @@ function ClaimDetailContent() {
                       <ReviewOutcome approved={item.manager_approved} />
                     ) : null
                   ) : isDirector ? (
-                    item.director_action_at ? (
-                      <ReviewOutcome approved={item.director_approved} />
-                    ) : (
-                      canDirectorReview && (
-                        <ReviewActions
-                          disabled={processingItem === item.uuid}
-                          onReject={() =>
-                            reviewItem(item.uuid, false, claimApi.directorRejectClaimItem)
-                          }
-                          onApprove={() =>
-                            reviewItem(item.uuid, true, claimApi.directorApproveClaimItem)
+                    <>
+                      {/* The manager's call on this item, so the General
+                          Manager isn't reviewing blind. */}
+                      {item.manager_action_at && (
+                        <ManagerDecisionBanner
+                          approved={item.manager_approved}
+                          name={
+                            item.manager_action_by?.personal?.full_name ??
+                            item.manager_action_by?.email ??
+                            "Manager"
                           }
                         />
-                      )
-                    )
+                      )}
+                      {item.director_action_at ? (
+                        <ReviewOutcome approved={item.director_approved} />
+                      ) : (
+                        canDirectorReview && (
+                          <ReviewActions
+                            disabled={processingItem === item.uuid}
+                            onReject={() =>
+                              reviewItem(item.uuid, false, claimApi.directorRejectClaimItem)
+                            }
+                            onApprove={() =>
+                              reviewItem(item.uuid, true, claimApi.directorApproveClaimItem)
+                            }
+                          />
+                        )
+                      )}
+                    </>
                   ) : item.manager_action_at ? (
                     <ReviewOutcome approved={item.manager_approved} />
                   ) : (

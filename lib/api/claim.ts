@@ -107,6 +107,8 @@ export const claimApi = {
     manager_approver_uuid?: string;
     is_director?: boolean;
     name?: string;
+    sortBy?: string;
+    orderBy?: string;
   }): Promise<ClaimHeaderListResponse> => {
     const query: Record<string, unknown> = { page: params?.page ?? 1 };
     if (params?.user_uuid) query.user_uuid = params.user_uuid;
@@ -114,6 +116,8 @@ export const claimApi = {
       query.manager_approver_uuid = params.manager_approver_uuid;
     if (params?.is_director) query.is_director = 1;
     if (params?.name) query.name = params.name;
+    if (params?.sortBy) query.sortBy = params.sortBy;
+    if (params?.orderBy) query.orderBy = params.orderBy;
 
     const response = await apiClient.get<ClaimHeaderListResponse>(
       "/claim-headers",
