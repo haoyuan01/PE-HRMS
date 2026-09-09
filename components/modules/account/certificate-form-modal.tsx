@@ -24,13 +24,28 @@ const schema = z
     organization: z.string().min(1, "Organization is required"),
     description: z.string(),
     date_applied: z.string().min(1, "Date applied is required"),
-    valid_until: z.string().min(1, "Valid until is required"),
+    valid_until: z.string(),
+    no_expiry: z.boolean(),
   })
-  .refine(
-    (d) =>
-      !d.date_applied || !d.valid_until || d.date_applied <= d.valid_until,
-    { message: "Valid until cannot be before the date applied", path: ["valid_until"] }
-  );
+  .superRefine((d, ctx) => {
+    // Valid Until is required only for certificates that actually expire.
+    if (d.no_expiry) return;
+    if (!d.valid_until) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Valid until is required",
+        path: ["valid_until"],
+      });
+      return;
+    }
+    if (d.date_applied && d.date_applied > d.valid_until) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Valid until cannot be before the date applied",
+        path: ["valid_until"],
+      });
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -52,6 +67,9 @@ export function CertificateFormModal({
   const [attachment, setAttachment] = useState<File | null>(null);
   // Whether the existing (already-uploaded) attachment has been cleared.
   const [existingCleared, setExistingCleared] = useState(false);
+  // The attachment lives outside the zod schema (it's a File, not a field), so
+  // its required-check is raised here on submit.
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const isEdit = !!certificate;
   // Show the existing attachment as an "uploaded" file until it's cleared or a
   // new file is chosen.
@@ -72,14 +90,16 @@ export function CertificateFormModal({
       description: certificate?.description ?? "",
       date_applied: certificate?.date_applied?.split("T")[0] ?? "",
       valid_until: certificate?.valid_until?.split("T")[0] ?? "",
+      // An existing certificate with no valid_until never expires.
+      no_expiry: !!certificate && !certificate.valid_until,
     },
   });
 
   // Valid Until is only selectable once Date Applied is set, and can't be
   // before it.
-  const [dateApplied, validUntil] = useWatch({
+  const [dateApplied, validUntil, noExpiry] = useWatch({
     control,
-    name: ["date_applied", "valid_until"],
+    name: ["date_applied", "valid_until", "no_expiry"],
   });
   useEffect(() => {
     if (validUntil && dateApplied && validUntil < dateApplied) {
@@ -87,14 +107,28 @@ export function CertificateFormModal({
     }
   }, [dateApplied, validUntil, setValue]);
 
+  // Ticking "No Expiry Date" drops any date already picked.
+  useEffect(() => {
+    if (noExpiry && validUntil) setValue("valid_until", "");
+  }, [noExpiry, validUntil, setValue]);
+
   const onSubmit = async (data: FormValues) => {
+    // An attachment is mandatory — either a newly picked file, or the existing
+    // one still in place when editing.
+    if (!attachment && !showExisting) {
+      setAttachmentError("Attachment is required");
+      return;
+    }
+    setAttachmentError(null);
+
     const payload = {
       user_uuid: userUuid,
       name: data.name,
       organization: data.organization,
       description: data.description,
       date_applied: data.date_applied,
-      valid_until: data.valid_until,
+      valid_until: data.no_expiry ? "" : data.valid_until,
+      certificate_permanent: data.no_expiry ? 1 : 0,
     };
     try {
       if (certificate) {
@@ -180,6 +214,21 @@ export function CertificateFormModal({
             )}
           </div>
 
+          {/* No Expiry Date — disables Valid Until and drops its requirement. */}
+          <label className="flex items-center gap-3 rounded-lg bg-surface-container-low px-4 py-3">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-outline-variant text-ds-primary focus:ring-ds-primary/30"
+              {...register("no_expiry")}
+            />
+            <span className="text-sm text-on-surface">
+              No Expiry Date
+              <span className="ml-1 text-xs text-on-surface-variant">
+                (this certificate does not expire)
+              </span>
+            </span>
+          </label>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="cert_applied" className={FIELD_LABEL}>
@@ -199,14 +248,14 @@ export function CertificateFormModal({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cert_valid" className={FIELD_LABEL}>
-                Valid Until *
+                {noExpiry ? "Valid Until" : "Valid Until *"}
               </Label>
               <Input
                 id="cert_valid"
                 type="date"
                 min={dateApplied || undefined}
-                disabled={!dateApplied}
-                className={`${FIELD_INPUT} disabled:cursor-not-allowed disabled:opacity-60`}
+                disabled={!dateApplied || noExpiry}
+                className={`${FIELD_INPUT} text-center disabled:cursor-not-allowed disabled:opacity-60`}
                 {...register("valid_until")}
               />
               {errors.valid_until && (
@@ -231,7 +280,7 @@ export function CertificateFormModal({
           </div>
 
           <div className="space-y-1.5">
-            <Label className={FIELD_LABEL}>Attachment</Label>
+            <Label className={FIELD_LABEL}>Attachment *</Label>
             {showExisting ? (
               // Existing attachment shown like an uploaded file, with a clear (X).
               <div className="flex items-center justify-between rounded-lg border border-outline-variant/30 bg-surface-container-low px-4 py-3">
@@ -259,8 +308,14 @@ export function CertificateFormModal({
               <ReceiptDropzone
                 file={attachment}
                 label="Click or drag certificate file here"
-                onChange={setAttachment}
+                onChange={(file) => {
+                  setAttachment(file);
+                  setAttachmentError(null);
+                }}
               />
+            )}
+            {attachmentError && (
+              <p className="text-xs text-ds-error">{attachmentError}</p>
             )}
           </div>
         </div>

@@ -12,6 +12,8 @@ export interface CertificatePayload {
   description: string;
   date_applied: string;
   valid_until: string;
+  // 1 when the certificate never expires (valid_until is then left empty).
+  certificate_permanent: number;
 }
 
 export const certificateApi = {
@@ -48,6 +50,7 @@ export const certificateApi = {
     formData.append("description", data.description);
     formData.append("date_applied", data.date_applied);
     formData.append("valid_until", data.valid_until);
+    formData.append("certificate_permanent", String(data.certificate_permanent));
     if (attachment) formData.append("attachment", attachment);
 
     await apiClient.post("/user-certificates", formData, {
@@ -69,6 +72,7 @@ export const certificateApi = {
     formData.append("description", data.description);
     formData.append("date_applied", data.date_applied);
     formData.append("valid_until", data.valid_until);
+    formData.append("certificate_permanent", String(data.certificate_permanent));
     if (attachment) formData.append("attachment", attachment);
 
     await apiClient.post(`/user-certificates/${uuid}`, formData, {

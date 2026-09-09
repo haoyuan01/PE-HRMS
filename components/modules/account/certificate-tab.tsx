@@ -144,7 +144,7 @@ export function CertificateTab({ userUuid }: CertificateTabProps) {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                     Date Applied
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                     Valid Until
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
@@ -170,7 +170,7 @@ export function CertificateTab({ userUuid }: CertificateTabProps) {
                     <td className="px-4 py-3 text-sm text-on-surface">
                       {formatDate(c.date_applied)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-on-surface">
+                    <td className="px-4 py-3 text-center text-sm text-on-surface">
                       {formatDate(c.valid_until)}
                     </td>
                     <td className="px-4 py-3 text-center">
