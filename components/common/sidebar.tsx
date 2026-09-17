@@ -75,7 +75,7 @@ const navItems: NavItem[] = [
     icon: ArrowLeftRight,
     permission: "movement_read",
   },
-  { label: "Payslip", href: "/dashboard/payslip", icon: Wallet, roles: ["accountant", "director"] },
+  { label: "Payslip", href: "/dashboard/payslip", icon: Wallet },
   {
     label: "Configuration",
     href: "/dashboard/configuration",

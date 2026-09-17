@@ -18,6 +18,10 @@ export default function ExpensesClaimFormPage() {
   // Managers, accountants and directors (general managers) get the Staff List;
   // regular employees only see their own claims (My List).
   const isDirector = useAuthStore((s) => s.isDirector);
+  const isAccountant = useAuthStore((s) => s.isAccountant);
+  // Accountants see every claim just like directors do, so they share the same
+  // director-scoped query; managers only see the claims they approve.
+  const canViewAllClaims = isDirector || isAccountant;
   const canViewStaff = useAuthStore(
     (s) => s.isManager || s.isAccountant || s.isDirector
   );
@@ -38,7 +42,8 @@ export default function ExpensesClaimFormPage() {
 
   // My List filters to the current user's own claims. Staff List shows the
   // claims that name the current user as the manager approver — except for
-  // directors (general managers), who see every claim (no approver filter).
+  // directors (general managers) and accountants, who see every claim (no
+  // approver filter).
   const params = useMemo(() => {
     if (effectiveTab === "my") {
       return {
@@ -49,9 +54,9 @@ export default function ExpensesClaimFormPage() {
     }
     return {
       page,
-      // Directors get the director-scoped list (handled server-side via the
-      // is_director flag); other approvers filter to claims they approve.
-      ...(isDirector
+      // Directors and accountants get the full list (handled server-side via
+      // the is_director flag); other approvers filter to claims they approve.
+      ...(canViewAllClaims
         ? { is_director: true }
         : currentUserUuid
         ? { manager_approver_uuid: currentUserUuid }
@@ -61,7 +66,7 @@ export default function ExpensesClaimFormPage() {
       sortBy: "created_at",
       orderBy: "desc",
     };
-  }, [effectiveTab, page, currentUserUuid, isDirector, search]);
+  }, [effectiveTab, page, currentUserUuid, canViewAllClaims, search]);
 
   const { claims, pagination, isLoading, error, refetch } = useClaimHeaders(params);
 
