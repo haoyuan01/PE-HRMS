@@ -10,6 +10,11 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { Eye } from "lucide-react";
 import { format } from "date-fns";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { LeaveRequest } from "@/types/leave-request";
 
 function formatDate(value: string | null) {
@@ -43,7 +48,15 @@ function requestStatus(r: LeaveRequest) {
   return { label: "Pending", className: "bg-amber-500/10 text-amber-600" };
 }
 
-function StaffCell({ user }: { user: LeaveRequest["user"] }) {
+function StaffCell({
+  user,
+  align = "center",
+}: {
+  user: LeaveRequest["user"];
+  // Table cells centre their content; the mobile card aligns to the start and
+  // lets the name truncate against the status pill.
+  align?: "center" | "start";
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const personal = user.personal;
   const name = personal?.full_name ?? user.email;
@@ -53,7 +66,11 @@ function StaffCell({ user }: { user: LeaveRequest["user"] }) {
     (user.email[0]?.toUpperCase() ?? "?");
 
   return (
-    <div className="flex items-center justify-center gap-3">
+    <div
+      className={`flex items-center gap-3 ${
+        align === "start" ? "min-w-0 flex-1" : "justify-center"
+      }`}
+    >
       <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-surface-container-high">
         {image && !imageFailed ? (
           <Image
@@ -102,6 +119,60 @@ const dateCols: ColumnDef<LeaveRequest>[] = [
     ),
   },
 ];
+
+// Mobile presentation of a single request. Six columns cannot be read at phone
+// width, so each row becomes a tappable card carrying the same fields — the
+// staff name on the staff list, the leave type on the user's own list.
+function LeaveRequestCard({
+  request,
+  showStaff,
+  onView,
+}: {
+  request: LeaveRequest;
+  showStaff?: boolean;
+  onView?: (request: LeaveRequest) => void;
+}) {
+  const status = requestStatus(request);
+  const { start, end } = leaveDateBounds(request);
+  const leaveType = request.leave_entitlement?.leave_policy?.name ?? "—";
+
+  return (
+    <RecordCard
+      onClick={() => onView?.(request)}
+      title={
+        showStaff ? (
+          <StaffCell user={request.user} align="start" />
+        ) : (
+          <p className="truncate font-medium text-on-surface">{leaveType}</p>
+        )
+      }
+      status={
+        <span
+          className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide ${status.className}`}
+        >
+          {status.label}
+        </span>
+      }
+      action={
+        <>
+          <Eye className="h-4 w-4" />
+          View Details
+        </>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField label="Start Date" value={formatDate(start)} />
+        <RecordCardField label="End Date" value={formatDate(end)} />
+        {/* Resume spans the row so the tiles stay a balanced block. */}
+        <RecordCardField
+          label="Date of Resume"
+          value={formatDate(request.resume_date)}
+          wide
+        />
+      </RecordCardFields>
+    </RecordCard>
+  );
+}
 
 interface LeaveRequestTableProps {
   requests: LeaveRequest[];
@@ -203,40 +274,55 @@ export function LeaveRequestTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-b border-outline-variant/20">
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
-                >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="divide-y divide-outline-variant/20">
-          {table.getRowModel().rows.map((row) => (
-            <tr
-              key={row.id}
-              className="transition-colors hover:bg-surface-container-low/50"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-3 text-center text-sm">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Card list — phones and small tablets */}
+      <div className="space-y-3 p-4 md:hidden">
+        {requests.map((request) => (
+          <LeaveRequestCard
+            key={request.uuid}
+            request={request}
+            showStaff={showStaff}
+            onView={onView}
+          />
+        ))}
+      </div>
+
+      {/* Table — md and up, where the columns still fit */}
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id} className="border-b border-outline-variant/20">
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
+                  >
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="divide-y divide-outline-variant/20">
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                className="transition-colors hover:bg-surface-container-low/50"
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="px-4 py-3 text-center text-sm">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

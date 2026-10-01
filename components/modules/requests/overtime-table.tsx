@@ -7,6 +7,11 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { overtimeApi } from "@/lib/api/overtime";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { Overtime } from "@/types/overtime";
 
 function formatDate(value: string | null) {
@@ -237,6 +242,49 @@ function OvertimeDetailModal({
   );
 }
 
+// Mobile stand-in for one overtime row — see RESPONSIVE.md. Static shell: the
+// File cell is a link, which a tappable-card <button> could not nest.
+function OvertimeCard({
+  overtime: o,
+  onView,
+}: {
+  overtime: Overtime;
+  onView: () => void;
+}) {
+  const status = overtimeStatus(o);
+
+  return (
+    <RecordCard
+      title={
+        <p className="truncate font-medium text-on-surface">
+          {formatDate(o.created_at)}
+        </p>
+      }
+      status={
+        <span
+          className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide ${status.className}`}
+        >
+          {status.label}
+        </span>
+      }
+      action={
+        <button
+          onClick={onView}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
+        >
+          <Eye className="h-4 w-4" />
+          View
+        </button>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField label="Remark" value={o.description || "—"} wide />
+        <RecordCardField label="File" value={<FileLink url={o.attachment_path} />} wide />
+      </RecordCardFields>
+    </RecordCard>
+  );
+}
+
 interface OvertimeTableProps {
   overtimes: Overtime[];
   isLoading: boolean;
@@ -280,7 +328,16 @@ export function OvertimeTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      {/* Card list — phones and small tablets */}
+      <div className="space-y-3 p-4 md:hidden">
+        {overtimes.map((o) => (
+          <OvertimeCard key={o.uuid} overtime={o} onView={() => setDetail(o)} />
+        ))}
+      </div>
+
+      {/* Table — md and up */}
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full">
         <thead>
           <tr className="border-b border-outline-variant/20">
@@ -339,6 +396,7 @@ export function OvertimeTable({
           })}
         </tbody>
       </table>
+      </div>
 
       {/* Detail and remark modals are mutually exclusive: choosing approve or
           reject swaps the detail modal out for the remark modal, and cancelling

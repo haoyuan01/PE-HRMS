@@ -8,6 +8,11 @@ import {
 } from "@tanstack/react-table";
 import { Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { Role } from "@/types/auth";
 
 function formatName(name: string) {
@@ -90,6 +95,81 @@ const columns: ColumnDef<Role>[] = [
   },
 ];
 
+// Mobile stand-in for one permission row — see RESPONSIVE.md. The table splits
+// Last Updated over two lines; a tile value is one line, so they join with a
+// separator.
+function RoleCard({
+  role: r,
+  canEdit,
+  canDelete,
+  onEdit,
+  onDelete,
+}: {
+  role: Role;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
+  const updated = r.updated_at ? new Date(r.updated_at) : null;
+  return (
+    <RecordCard
+      title={
+        <p className="truncate font-medium text-on-surface">
+          {formatName(r.name)}
+        </p>
+      }
+      status={
+        <span
+          className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            r.is_active
+              ? "bg-emerald-500/10 text-emerald-600"
+              : "bg-ds-error/10 text-ds-error"
+          }`}
+        >
+          {r.is_active ? "Active" : "Inactive"}
+        </span>
+      }
+      action={
+        canEdit || canDelete ? (
+          <>
+            {canEdit && (
+              <button
+                onClick={onEdit}
+                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                title="Edit permission"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={onDelete}
+                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+                title="Delete permission"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </>
+        ) : undefined
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField
+          label="Last Updated"
+          value={
+            updated
+              ? `${format(updated, "MMM dd, yyyy")} · ${format(updated, "hh:mm a")}`
+              : "—"
+          }
+          wide
+        />
+      </RecordCardFields>
+    </RecordCard>
+  );
+}
+
 interface RoleTableProps {
   roles: Role[];
   isLoading: boolean;
@@ -137,7 +217,23 @@ export function RoleTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* Card list — phones and small tablets */}
+      <div className="space-y-3 p-4 md:hidden">
+        {roles.map((r) => (
+          <RoleCard
+            key={r.uuid}
+            role={r}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            onEdit={() => onEdit?.(r.uuid)}
+            onDelete={() => onDelete?.(r.uuid)}
+          />
+        ))}
+      </div>
+
+      {/* Table — md and up */}
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full table-fixed">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -190,6 +286,7 @@ export function RoleTable({
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

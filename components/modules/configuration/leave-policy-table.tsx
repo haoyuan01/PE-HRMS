@@ -7,6 +7,11 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { Pencil, Trash2 } from "lucide-react";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { LeavePolicy } from "@/types/leave-policy";
 
 function YesNo({ value }: { value: boolean }) {
@@ -82,6 +87,73 @@ const columns: ColumnDef<LeavePolicy>[] = [
   },
 ];
 
+// Mobile stand-in for one leave policy row — see RESPONSIVE.md. The policy code
+// takes the status slot as a neutral chip: it is the at-a-glance identifier.
+function LeavePolicyCard({
+  policy: p,
+  canEdit,
+  canDelete,
+  onEdit,
+  onDelete,
+}: {
+  policy: LeavePolicy;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <RecordCard
+      title={<p className="truncate font-medium text-on-surface">{p.name}</p>}
+      status={
+        <span className="inline-flex shrink-0 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+          {p.code}
+        </span>
+      }
+      action={
+        canEdit || canDelete ? (
+          <>
+            {canEdit && (
+              <button
+                onClick={onEdit}
+                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                title="Edit leave policy"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={onDelete}
+                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+                title="Delete leave policy"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </>
+        ) : undefined
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField
+          label="Allow Half Day"
+          value={p.allow_half_day ? "Yes" : "No"}
+        />
+        <RecordCardField
+          label="Carry Forward"
+          value={Number(p.carry_forward_days) > 0 ? "Yes" : "No"}
+        />
+        <RecordCardField
+          label="Min Notice Days"
+          value={String(Number(p.min_notice_days))}
+          wide
+        />
+      </RecordCardFields>
+    </RecordCard>
+  );
+}
+
 interface LeavePolicyTableProps {
   policies: LeavePolicy[];
   isLoading: boolean;
@@ -129,7 +201,23 @@ export function LeavePolicyTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* Card list — phones and small tablets */}
+      <div className="space-y-3 p-4 md:hidden">
+        {policies.map((p) => (
+          <LeavePolicyCard
+            key={p.uuid}
+            policy={p}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            onEdit={() => onEdit?.(p)}
+            onDelete={() => onDelete?.(p)}
+          />
+        ))}
+      </div>
+
+      {/* Table — md and up */}
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full table-fixed">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -180,6 +268,7 @@ export function LeavePolicyTable({
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

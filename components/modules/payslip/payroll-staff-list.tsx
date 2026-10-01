@@ -11,6 +11,12 @@ import {
   PayslipFilterModal,
   type PayslipFilters,
 } from "@/components/modules/payslip/payslip-filter-modal";
+import { TablePagination } from "@/components/common/table-pagination";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { PayrollItem, PayrollUser } from "@/types/payroll";
 
 const MONTHS = [
@@ -49,6 +55,180 @@ function Avatar({ user }: { user: PayrollUser }) {
         </span>
       )}
     </div>
+  );
+}
+
+// One payslip inside an expanded staff card on mobile. A white block on the
+// tinted card, matching the field tiles; its own values stay plain label/value
+// pairs, since a tile here would be white on white.
+function PayslipEntry({
+  payroll: p,
+  period,
+  onEdit,
+  onDelete,
+}: {
+  payroll: PayrollItem;
+  period: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="rounded-lg bg-surface-container-lowest p-3">
+      <div className="flex items-center gap-3">
+        <p className="min-w-0 flex-1 truncate text-sm font-medium text-on-surface">
+          {period}
+        </p>
+        <span
+          className={`shrink-0 text-xs font-medium ${
+            isPublished(p)
+              ? "text-green-600 dark:text-green-400"
+              : "text-on-surface-variant"
+          }`}
+        >
+          {isPublished(p) ? "Published" : "Not Published"}
+        </span>
+      </div>
+
+      <div className="mt-2">
+        <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+          Remark
+        </p>
+        <p className="mt-0.5 text-xs text-on-surface">{p.remark || "—"}</p>
+      </div>
+
+      <div className="mt-2 flex items-center justify-between gap-3">
+        {p.attachment_path ? (
+          <a
+            href={p.attachment_path}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
+          >
+            <Download className="h-3.5 w-3.5" />
+            View
+          </a>
+        ) : (
+          <span className="text-xs text-on-surface-variant">—</span>
+        )}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onEdit}
+            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+            title="Edit"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+            title="Delete"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Mobile stand-in for one staff row — see RESPONSIVE.md. The disclosure toggle
+// lives in children rather than `action`, because it has to sit above the
+// payslip list it reveals.
+function StaffPayrollCard({
+  user: u,
+  payrolls,
+  published,
+  isOpen,
+  periodLabel,
+  periodOf,
+  onToggle,
+  onAdd,
+  onEdit,
+  onDelete,
+}: {
+  user: PayrollUser;
+  payrolls: PayrollItem[];
+  published: boolean;
+  isOpen: boolean;
+  periodLabel: string;
+  periodOf: (p: PayrollItem) => string;
+  onToggle: () => void;
+  onAdd: () => void;
+  onEdit: (p: PayrollItem) => void;
+  onDelete: (p: PayrollItem, period: string) => void;
+}) {
+  return (
+    <RecordCard
+      title={
+        <div className="flex items-center gap-3">
+          <Avatar user={u} />
+          <p className="min-w-0 truncate font-medium text-on-surface">
+            {u.personal?.full_name ?? u.email}
+          </p>
+        </div>
+      }
+      status={
+        <span
+          className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            published
+              ? "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400"
+              : "bg-surface-container-high text-on-surface-variant"
+          }`}
+        >
+          {published ? "Published" : "Not Published"}
+        </span>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField
+          label="Department"
+          value={u.employment?.department?.name ?? "—"}
+        />
+        <RecordCardField
+          label="Branch Office"
+          value={u.employment?.office?.name ?? "—"}
+        />
+      </RecordCardFields>
+
+      <div className="flex justify-end">
+        <button
+          onClick={onToggle}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
+        >
+          View Payslip
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
+
+      {isOpen && (
+        <div className="space-y-2">
+          {payrolls.map((p) => (
+            <PayslipEntry
+              key={p.uuid}
+              payroll={p}
+              period={periodOf(p)}
+              onEdit={() => onEdit(p)}
+              onDelete={() => onDelete(p, periodOf(p))}
+            />
+          ))}
+          {payrolls.length === 0 && (
+            <p className="flex items-center justify-center gap-2 py-2 text-center text-xs text-on-surface-variant">
+              <FileText className="h-4 w-4 opacity-50" />
+              No payslip published for {periodLabel}.
+            </p>
+          )}
+          <button
+            onClick={onAdd}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-container-lowest px-4 py-2.5 text-xs font-medium text-ds-primary transition-colors hover:bg-surface-container-high"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add New Payslip
+          </button>
+        </div>
+      )}
+    </RecordCard>
   );
 }
 
@@ -237,6 +417,13 @@ export function PayrollStaffList() {
       ? MONTHS[month - 1]
       : "any period";
 
+  // Period label for one payslip row — falls back to the filter's period when
+  // the record carries no month. Shared by the table and the mobile cards.
+  const rowPeriodOf = (p: PayrollItem) =>
+    p.month
+      ? `${MONTHS[Number(p.month) - 1] ?? p.month} ${p.year ?? year}`
+      : periodLabel;
+
   // Chips summarising the applied filters, shown next to the Filters button.
   const activeChips = [
     periodLabel,
@@ -319,7 +506,28 @@ export function PayrollStaffList() {
             <p className="text-sm">No employees found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Card list — phones and small tablets */}
+          <div className="space-y-3 p-4 md:hidden">
+            {pagedRows.map(({ u, payrolls, published }) => (
+              <StaffPayrollCard
+                key={u.uuid}
+                user={u}
+                payrolls={payrolls}
+                published={published}
+                isOpen={expanded.has(u.uuid)}
+                periodLabel={periodLabel}
+                periodOf={rowPeriodOf}
+                onToggle={() => toggle(u.uuid)}
+                onAdd={() => setAddFor(u)}
+                onEdit={(p) => setEdit({ user: u, payroll: p })}
+                onDelete={(p, period) => setDel({ payroll: p, period })}
+              />
+            ))}
+          </div>
+
+          {/* Table — md and up */}
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-outline-variant/20">
@@ -413,9 +621,7 @@ export function PayrollStaffList() {
                                   </thead>
                                   <tbody className="divide-y divide-outline-variant/20">
                                     {payrolls.map((p) => {
-                                      const rowPeriod = p.month
-                                        ? `${MONTHS[Number(p.month) - 1] ?? p.month} ${p.year ?? year}`
-                                        : periodLabel;
+                                      const rowPeriod = rowPeriodOf(p);
                                       return (
                                       <tr
                                         key={p.uuid}
@@ -512,32 +718,17 @@ export function PayrollStaffList() {
               </tbody>
             </table>
           </div>
+          </>
         )}
         {!error && !isLoading && rows.length > 0 && (
-          <div className="flex flex-col gap-3 border-t border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-on-surface-variant">
-              Showing {pagedRows.length} of {rows.length} staff
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage <= 1}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <span className="px-2 text-sm text-on-surface-variant">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            shown={pagedRows.length}
+            total={rows.length}
+            label="staff"
+            currentPage={currentPage}
+            lastPage={totalPages}
+            onPageChange={setPage}
+          />
         )}
       </div>
 

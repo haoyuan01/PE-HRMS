@@ -5,6 +5,11 @@ import { Megaphone } from "lucide-react";
 import { format } from "date-fns";
 import { useDashboardAnnouncements } from "@/hooks/useDashboardAnnouncements";
 import { AnnouncementDetailModal } from "@/components/modules/announcements/announcement-detail-modal";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { Announcement } from "@/types/announcement";
 
 function formatRange(start: string | null, end: string | null) {
@@ -17,6 +22,37 @@ function formatRange(start: string | null, end: string | null) {
   }
   const sameYear = s.getFullYear() === e.getFullYear();
   return `${format(s, sameYear ? "dd MMM" : "dd MMM yyyy")} – ${format(e, "dd MMM yyyy")}`;
+}
+
+// Mobile stand-in for one announcement row — see RESPONSIVE.md. The row opens
+// the detail modal and carries no inline controls, so the whole card is the tap
+// target. No action row: this is a compact dashboard preview.
+function AnnouncementOverviewCard({
+  announcement: a,
+  onSelect,
+}: {
+  announcement: Announcement;
+  onSelect: () => void;
+}) {
+  return (
+    <RecordCard
+      onClick={onSelect}
+      title={<p className="truncate font-medium text-on-surface">{a.name}</p>}
+    >
+      <RecordCardFields>
+        <RecordCardField
+          label="Date"
+          value={formatRange(a.start_date, a.end_date)}
+          wide
+        />
+      </RecordCardFields>
+
+      {/* Prose wraps, so it sits outside the tile grid rather than in a tile. */}
+      <p className="line-clamp-2 text-xs text-on-surface-variant">
+        {a.description || "—"}
+      </p>
+    </RecordCard>
+  );
 }
 
 export function AnnouncementOverview() {
@@ -45,7 +81,20 @@ export function AnnouncementOverview() {
             <p className="mt-2 text-sm">No announcements.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Card list — phones and small tablets */}
+          <div className="space-y-3 p-4 md:hidden">
+            {announcements.map((a) => (
+              <AnnouncementOverviewCard
+                key={a.uuid}
+                announcement={a}
+                onSelect={() => setSelected(a)}
+              />
+            ))}
+          </div>
+
+          {/* Table — md and up */}
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-outline-variant/20">
@@ -83,6 +132,7 @@ export function AnnouncementOverview() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

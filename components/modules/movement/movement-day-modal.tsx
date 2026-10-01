@@ -4,6 +4,11 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
 import { format } from "date-fns";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { Movement, MovementUser } from "@/types/movement";
 
 function formatDate(value: string | null) {
@@ -44,6 +49,41 @@ interface MovementDayModalProps {
   date: string;
   movements: Movement[];
   onClose: () => void;
+}
+
+// Mobile stand-in for one movement row — see RESPONSIVE.md. Mirrors the cards on
+// the Staff Movement page and dashboard preview so the three read alike. Tile
+// labels spell out "Start Date" / "End Date": this table abbreviates them only
+// because it sits in a modal, and a card has the room.
+function MovementDayCard({ movement: m }: { movement: Movement }) {
+  return (
+    <RecordCard
+      title={
+        <div className="flex items-center gap-3">
+          <Avatar user={m.user} />
+          <div className="min-w-0">
+            <p className="truncate font-medium text-on-surface">
+              {m.user?.personal?.full_name ?? m.user?.email ?? "—"}
+            </p>
+            <p className="truncate text-xs text-on-surface-variant">
+              {m.user?.employment?.department?.name ?? "—"}
+            </p>
+          </div>
+        </div>
+      }
+      status={
+        <span className="inline-flex shrink-0 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-medium text-on-surface-variant">
+          {m.movement_type?.name ?? "—"}
+        </span>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField label="Start Date" value={formatDate(m.start_date)} />
+        <RecordCardField label="End Date" value={formatDate(m.end_date)} />
+        <RecordCardField label="Location" value={m.location || "—"} wide />
+      </RecordCardFields>
+    </RecordCard>
+  );
 }
 
 export function MovementDayModal({
@@ -87,7 +127,16 @@ export function MovementDayModal({
               <p className="text-sm">No movements on this day.</p>
             </div>
           ) : (
-            <table className="w-full">
+            <>
+            {/* Card list — phones and small tablets */}
+            <div className="space-y-3 p-4 md:hidden">
+              {movements.map((m) => (
+                <MovementDayCard key={m.uuid} movement={m} />
+              ))}
+            </div>
+
+            {/* Table — md and up */}
+            <table className="hidden w-full md:table">
               <thead>
                 <tr className="border-b border-outline-variant/20">
                   <th className="py-3 pl-6 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
@@ -139,6 +188,7 @@ export function MovementDayModal({
                 ))}
               </tbody>
             </table>
+            </>
           )}
         </div>
       </div>

@@ -23,6 +23,12 @@ import {
   CertificateFilterModal,
   type CertificateFilters,
 } from "@/components/modules/certificate/certificate-filter-modal";
+import { TablePagination } from "@/components/common/table-pagination";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { CertificateUser, UserCertificate } from "@/types/certificate";
 
 function formatDate(value: string | null) {
@@ -55,6 +61,186 @@ function Avatar({ user }: { user: CertificateUser }) {
         </span>
       )}
     </div>
+  );
+}
+
+// One certificate inside an expanded staff card on mobile. A white block on the
+// tinted card, matching the field tiles; its own values are plain label/value
+// pairs rather than nested tiles, which would be white on white.
+function CertificateEntry({
+  cert: c,
+  canUpdate,
+  canDelete,
+  onEdit,
+  onDelete,
+}: {
+  cert: UserCertificate;
+  canUpdate: boolean;
+  canDelete: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="rounded-lg bg-surface-container-lowest p-3">
+      <div className="flex items-start gap-2">
+        {c.attachment_path && (
+          <a
+            href={c.attachment_path}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View file"
+            className="mt-0.5 shrink-0 text-ds-primary transition-colors hover:text-ds-primary-dim"
+          >
+            <FileText className="h-4 w-4" />
+          </a>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-on-surface">{c.name}</p>
+          <p className="truncate text-xs text-on-surface-variant">
+            {c.organization || "—"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+            Date Applied
+          </p>
+          <p className="mt-0.5 truncate text-xs text-on-surface">
+            {formatDate(c.date_applied)}
+          </p>
+        </div>
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+            Valid Until
+          </p>
+          <p className="mt-0.5 truncate text-xs text-on-surface">
+            {formatDate(c.valid_until)}
+          </p>
+        </div>
+      </div>
+
+      {(canUpdate || canDelete) && (
+        <div className="mt-2 flex items-center justify-end gap-1">
+          {canUpdate && (
+            <button
+              onClick={onEdit}
+              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+              title="Edit"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={onDelete}
+              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+              title="Delete"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Mobile stand-in for one staff row — see RESPONSIVE.md. The disclosure toggle
+// lives in children rather than the `action` slot, because it has to sit above
+// the certificate list it reveals.
+function StaffCertificateCard({
+  user: u,
+  isOpen,
+  canCreate,
+  canUpdate,
+  canDelete,
+  onToggle,
+  onAdd,
+  onEdit,
+  onDelete,
+}: {
+  user: CertificateUser;
+  isOpen: boolean;
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  onToggle: () => void;
+  onAdd: () => void;
+  onEdit: (cert: UserCertificate) => void;
+  onDelete: (cert: UserCertificate) => void;
+}) {
+  const certs = u.certificates ?? [];
+
+  return (
+    <RecordCard
+      title={
+        <div className="flex items-center gap-3">
+          <Avatar user={u} />
+          <p className="min-w-0 truncate font-medium text-on-surface">
+            {u.personal?.full_name ?? u.email}
+          </p>
+        </div>
+      }
+      status={
+        <span className="inline-flex shrink-0 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-bold text-on-surface">
+          {certs.length} {certs.length === 1 ? "cert" : "certs"}
+        </span>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField
+          label="Department"
+          value={u.employment?.department?.name ?? "—"}
+        />
+        <RecordCardField
+          label="Branch Office"
+          value={u.employment?.office?.name ?? "—"}
+        />
+      </RecordCardFields>
+
+      <div className="flex justify-end">
+        <button
+          onClick={onToggle}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
+        >
+          View Cert
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
+
+      {isOpen && (
+        <div className="space-y-2">
+          {certs.map((c) => (
+            <CertificateEntry
+              key={c.uuid}
+              cert={c}
+              canUpdate={canUpdate}
+              canDelete={canDelete}
+              onEdit={() => onEdit(c)}
+              onDelete={() => onDelete(c)}
+            />
+          ))}
+          {certs.length === 0 && (
+            <p className="py-2 text-center text-xs text-on-surface-variant">
+              No certificates yet.
+            </p>
+          )}
+          {canCreate && (
+            <button
+              onClick={onAdd}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-surface-container-lowest px-4 py-2.5 text-xs font-medium text-ds-primary transition-colors hover:bg-surface-container-high"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add New Certificate
+            </button>
+          )}
+        </div>
+      )}
+    </RecordCard>
   );
 }
 
@@ -277,7 +463,27 @@ export function CertificateUsersTable() {
           <p className="text-sm">No employees found.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        {/* Card list — phones and small tablets */}
+        <div className="space-y-3 p-4 md:hidden">
+          {pagedRows.map((u) => (
+            <StaffCertificateCard
+              key={u.uuid}
+              user={u}
+              isOpen={expanded.has(u.uuid)}
+              canCreate={canCreate}
+              canUpdate={canUpdate}
+              canDelete={canDelete}
+              onToggle={() => toggle(u.uuid)}
+              onAdd={() => setAddFor(u.uuid)}
+              onEdit={(c) => setEdit({ userUuid: u.uuid, cert: c })}
+              onDelete={(c) => setDel(c)}
+            />
+          ))}
+        </div>
+
+        {/* Table — md and up */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full">
             <thead>
               <tr className="border-b border-outline-variant/20">
@@ -443,32 +649,17 @@ export function CertificateUsersTable() {
             </tbody>
           </table>
         </div>
+        </>
         )}
         {!error && !isLoading && rows.length > 0 && (
-          <div className="flex flex-col gap-3 border-t border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-on-surface-variant">
-              Showing {pagedRows.length} of {rows.length} staff
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage <= 1}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <span className="px-2 text-sm text-on-surface-variant">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            shown={pagedRows.length}
+            total={rows.length}
+            label="staff"
+            currentPage={currentPage}
+            lastPage={totalPages}
+            onPageChange={setPage}
+          />
         )}
       </div>
 

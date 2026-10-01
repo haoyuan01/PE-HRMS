@@ -7,11 +7,76 @@ import { toast } from "sonner";
 import { useCertificates } from "@/hooks/useCertificates";
 import { certificateApi } from "@/lib/api/certificate";
 import { CertificateFormModal } from "@/components/modules/account/certificate-form-modal";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { UserCertificate } from "@/types/certificate";
 
 function formatDate(value: string | null) {
   if (!value) return "—";
   return format(new Date(value), "dd MMM yyyy");
+}
+
+// Mobile stand-in for one certificate row — see RESPONSIVE.md. Actions stay
+// real buttons, so the card is static rather than one big tap target.
+function CertificateCard({
+  certificate: c,
+  onEdit,
+  onDelete,
+}: {
+  certificate: UserCertificate;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <RecordCard
+      title={<p className="truncate font-medium text-on-surface">{c.name}</p>}
+      action={
+        <>
+          <button
+            onClick={onEdit}
+            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+            title="Edit"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+            title="Delete"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField label="Organization" value={c.organization || "—"} wide />
+        <RecordCardField label="Date Applied" value={formatDate(c.date_applied)} />
+        <RecordCardField label="Valid Until" value={formatDate(c.valid_until)} />
+        <RecordCardField
+          label="File"
+          wide
+          value={
+            c.attachment_path ? (
+              <a
+                href={c.attachment_path}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-blue-600 transition-colors hover:text-blue-700"
+              >
+                View Attachment
+              </a>
+            ) : (
+              "—"
+            )
+          }
+        />
+      </RecordCardFields>
+    </RecordCard>
+  );
 }
 
 function DeleteConfirm({
@@ -131,7 +196,21 @@ export function CertificateTab({ userUuid }: CertificateTabProps) {
             <p className="text-sm">No certificates added yet.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Card list — phones and small tablets */}
+          <div className="space-y-3 p-4 md:hidden">
+            {certificates.map((c) => (
+              <CertificateCard
+                key={c.uuid}
+                certificate={c}
+                onEdit={() => setEdit(c)}
+                onDelete={() => setDel(c)}
+              />
+            ))}
+          </div>
+
+          {/* Table — md and up */}
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-outline-variant/20">
@@ -210,6 +289,7 @@ export function CertificateTab({ userUuid }: CertificateTabProps) {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

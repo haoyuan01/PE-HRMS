@@ -136,6 +136,8 @@ NEXT_PUBLIC_APP_ENV=development
 - Use `shadcn/ui` primitives (Button, Dialog, Table, Select, etc.) as the base — extend, don't replace.
 - All forms must use **React Hook Form** with **Zod** schema validation.
 - Use **TanStack Table** for any data table with sorting, filtering, or pagination.
+- Every data table must also render a **mobile card list** below `md` via `RecordCard`
+  (`components/common/record-card.tsx`) — never a horizontal scroll. See `RESPONSIVE.md`.
 - Wrap page-level data fetching in loading/error boundary components.
 
 ---
@@ -200,6 +202,7 @@ npx shadcn@latest add [component]   # Add a new shadcn component
 - **Do not commit** `.env.local` or any secrets.
 - When adding a new HRMS module, follow the existing folder pattern: create the page in `app/(dashboard)/[module]/`, add a store in `stores/`, and an API file in `lib/api/`.
 - When generating forms, always use React Hook Form + Zod, never raw controlled inputs.
-- When generating tables, always use TanStack Table.
+- When generating tables, always use TanStack Table **and** the `RecordCard` mobile
+  card list — read `RESPONSIVE.md` before building or changing any data table.
 - Prefer composition over prop-drilling — use Zustand store for shared state between deeply nested components.
 - Always generate TypeScript types for API response shapes in `/types/`.

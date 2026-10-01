@@ -7,6 +7,11 @@ import { ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useDashboardMovements } from "@/hooks/useDashboardMovements";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { Movement, MovementUser } from "@/types/movement";
 
 function formatDate(value: string | null) {
@@ -40,6 +45,39 @@ function Avatar({ user }: { user: MovementUser | null }) {
         </span>
       )}
     </div>
+  );
+}
+
+// Mobile stand-in for one movement row — see RESPONSIVE.md. Mirrors the card on
+// the full Staff Movement page, minus its actions: this preview has none.
+function MovementOverviewCard({ movement: m }: { movement: Movement }) {
+  return (
+    <RecordCard
+      title={
+        <div className="flex items-center gap-3">
+          <Avatar user={m.user} />
+          <div className="min-w-0">
+            <p className="truncate font-medium text-on-surface">
+              {m.user?.personal?.full_name ?? m.user?.email ?? "—"}
+            </p>
+            <p className="truncate text-xs text-on-surface-variant">
+              {m.user?.employment?.department?.name ?? "—"}
+            </p>
+          </div>
+        </div>
+      }
+      status={
+        <span className="inline-flex shrink-0 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-medium text-on-surface-variant">
+          {m.movement_type?.name ?? "—"}
+        </span>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField label="Start Date" value={formatDate(m.start_date)} />
+        <RecordCardField label="End Date" value={formatDate(m.end_date)} />
+        <RecordCardField label="Location" value={m.location || "—"} wide />
+      </RecordCardFields>
+    </RecordCard>
   );
 }
 
@@ -83,7 +121,16 @@ export function StaffMovementOverview() {
             No staff movements.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Card list — phones and small tablets */}
+          <div className="space-y-3 p-4 md:hidden">
+            {rows.map((m: Movement) => (
+              <MovementOverviewCard key={m.uuid} movement={m} />
+            ))}
+          </div>
+
+          {/* Table — md and up */}
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-outline-variant/20">
@@ -137,6 +184,7 @@ export function StaffMovementOverview() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>

@@ -8,6 +8,11 @@ import {
 } from "@tanstack/react-table";
 import { Eye } from "lucide-react";
 import { format } from "date-fns";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { ActivityLog } from "@/types/activity-log";
 
 // "App\Models\UserContact" -> "UserContact"
@@ -106,6 +111,58 @@ const columns: ColumnDef<ActivityLog>[] = [
   },
 ];
 
+// Mobile stand-in for one audit log row — see RESPONSIVE.md. The table splits
+// Datetime over two lines; a tile value is one line, so they join with a
+// separator.
+function AuditLogCard({
+  log,
+  onView,
+}: {
+  log: ActivityLog;
+  onView?: () => void;
+}) {
+  const email = log.user?.email;
+  const date = new Date(log.created_at);
+
+  return (
+    <RecordCard
+      title={
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-xs font-semibold text-on-surface-variant">
+            {email ? initials(email) : "?"}
+          </div>
+          <span className="truncate font-medium text-on-surface">
+            {email ?? "System"}
+          </span>
+        </div>
+      }
+      status={<ActionBadge event={log.event} />}
+      action={
+        <button
+          onClick={onView}
+          className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+          title="View details"
+        >
+          <Eye className="h-4 w-4" />
+        </button>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField
+          label="Module"
+          value={moduleLabel(log.subject_type)}
+          wide
+        />
+        <RecordCardField
+          label="Datetime"
+          value={`${format(date, "MMM dd, yyyy")} · ${format(date, "HH:mm:ss")}`}
+          wide
+        />
+      </RecordCardFields>
+    </RecordCard>
+  );
+}
+
 interface AuditLogTableProps {
   logs: ActivityLog[];
   isLoading: boolean;
@@ -143,7 +200,16 @@ export function AuditLogTable({ logs, isLoading, onView }: AuditLogTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* Card list — phones and small tablets */}
+      <div className="space-y-3 p-4 md:hidden">
+        {logs.map((log) => (
+          <AuditLogCard key={log.uuid} log={log} onView={() => onView?.(log)} />
+        ))}
+      </div>
+
+      {/* Table — md and up */}
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full table-fixed">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -194,6 +260,7 @@ export function AuditLogTable({ logs, isLoading, onView }: AuditLogTableProps) {
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

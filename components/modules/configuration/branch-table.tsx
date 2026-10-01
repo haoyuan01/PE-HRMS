@@ -7,6 +7,11 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { Pencil, Trash2 } from "lucide-react";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { Office } from "@/types/office";
 
 function formatName(name: string) {
@@ -97,6 +102,68 @@ const columns: ColumnDef<Office>[] = [
   },
 ];
 
+// Mobile stand-in for one branch row — see RESPONSIVE.md. State is already a
+// chip in the table, so it takes the status slot.
+function BranchCard({
+  office: o,
+  canEdit,
+  canDelete,
+  onEdit,
+  onDelete,
+}: {
+  office: Office;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <RecordCard
+      title={
+        <p className="truncate font-medium text-on-surface">
+          {formatName(o.name)}
+        </p>
+      }
+      status={
+        o.state ? (
+          <span className="inline-flex shrink-0 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+            {o.state}
+          </span>
+        ) : undefined
+      }
+      action={
+        canEdit || canDelete ? (
+          <>
+            {canEdit && (
+              <button
+                onClick={onEdit}
+                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                title="Edit branch"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={onDelete}
+                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+                title="Delete branch"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </>
+        ) : undefined
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField label="Phone Contact" value={o.phone_number || "—"} />
+        <RecordCardField label="City" value={o.city || "—"} />
+      </RecordCardFields>
+    </RecordCard>
+  );
+}
+
 interface BranchTableProps {
   offices: Office[];
   isLoading: boolean;
@@ -144,7 +211,23 @@ export function BranchTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* Card list — phones and small tablets */}
+      <div className="space-y-3 p-4 md:hidden">
+        {offices.map((o) => (
+          <BranchCard
+            key={o.uuid}
+            office={o}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            onEdit={() => onEdit?.(o.uuid)}
+            onDelete={() => onDelete?.(o.uuid)}
+          />
+        ))}
+      </div>
+
+      {/* Table — md and up */}
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full table-fixed">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -195,6 +278,7 @@ export function BranchTable({
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

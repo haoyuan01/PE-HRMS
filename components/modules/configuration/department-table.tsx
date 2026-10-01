@@ -7,6 +7,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { Pencil, Trash2 } from "lucide-react";
+import { NameDescriptionCard } from "@/components/modules/configuration/name-description-card";
 import type { Department } from "@/types/department";
 
 function formatName(name: string) {
@@ -120,57 +121,76 @@ export function DepartmentTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full table-fixed">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-b border-outline-variant/20">
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className={`py-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant ${
-                    header.column.id === "name"
-                      ? "w-[24%] pl-12 pr-4 text-left"
-                      : header.column.id === "description"
-                        ? "w-[60%] pl-4 pr-12 text-left"
-                        : "w-[16%] pl-4 pr-12 text-right"
-                  }`}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="divide-y divide-outline-variant/20">
-          {table.getRowModel().rows.map((row) => (
-            <tr
-              key={row.id}
-              className="transition-colors hover:bg-surface-container-low/50"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td
-                  key={cell.id}
-                  className={`py-3 text-sm ${
-                    cell.column.id === "name"
-                      ? "pl-12 pr-4"
-                      : cell.column.id === "actions"
-                        ? "pl-4 pr-12"
-                        : "pl-4 pr-12"
-                  }`}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Card list — phones and small tablets */}
+      <div className="space-y-3 p-4 md:hidden">
+        {departments.map((item) => (
+          <NameDescriptionCard
+            key={item.uuid}
+            name={formatName(item.name)}
+            description={item.description}
+            entityLabel="department"
+            canEdit={canEdit}
+            canDelete={canDelete}
+            onEdit={() => onEdit?.(item.uuid)}
+            onDelete={() => onDelete?.(item.uuid)}
+          />
+        ))}
+      </div>
+
+      {/* Table — md and up */}
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full table-fixed">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id} className="border-b border-outline-variant/20">
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className={`py-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant ${
+                      header.column.id === "name"
+                        ? "w-[24%] pl-12 pr-4 text-left"
+                        : header.column.id === "description"
+                          ? "w-[60%] pl-4 pr-12 text-left"
+                          : "w-[16%] pl-4 pr-12 text-right"
+                    }`}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="divide-y divide-outline-variant/20">
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                className="transition-colors hover:bg-surface-container-low/50"
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    className={`py-3 text-sm ${
+                      cell.column.id === "name"
+                        ? "pl-12 pr-4"
+                        : cell.column.id === "actions"
+                          ? "pl-4 pr-12"
+                          : "pl-4 pr-12"
+                    }`}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

@@ -21,7 +21,92 @@ import {
   type AnnouncementFilters,
 } from "@/components/modules/announcements/announcement-filter-modal";
 import { AnnouncementFormModal } from "@/components/modules/announcements/announcement-form-modal";
+import { TablePagination } from "@/components/common/table-pagination";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { Announcement } from "@/types/announcement";
+
+// Mobile stand-in for one announcement row — see RESPONSIVE.md. Static shell:
+// the actions are real buttons, not a navigation target.
+function AnnouncementCard({
+  announcement: a,
+  showActions,
+  canUpdate,
+  canDelete,
+  isEditLoading,
+  onEdit,
+  onDelete,
+}: {
+  announcement: Announcement;
+  showActions: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  isEditLoading: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <RecordCard
+      title={<p className="truncate font-medium text-on-surface">{a.name}</p>}
+      status={
+        <span
+          className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            a.is_published
+              ? "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400"
+              : "bg-surface-container-high text-on-surface-variant"
+          }`}
+        >
+          {a.is_published ? "Published" : "Not Published"}
+        </span>
+      }
+      action={
+        showActions ? (
+          <>
+            {canUpdate && (
+              <button
+                onClick={onEdit}
+                disabled={isEditLoading}
+                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:opacity-50"
+                title="Edit"
+              >
+                {isEditLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Pencil className="h-4 w-4" />
+                )}
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={onDelete}
+                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+                title="Delete"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </>
+        ) : undefined
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField
+          label="Date"
+          value={formatRange(a.start_date, a.end_date)}
+          wide
+        />
+      </RecordCardFields>
+
+      {/* Prose wraps, so it sits outside the tile grid rather than in a tile. */}
+      <p className="line-clamp-2 text-xs text-on-surface-variant">
+        {a.description || "—"}
+      </p>
+    </RecordCard>
+  );
+}
 
 function DeleteConfirm({
   announcement,
@@ -249,7 +334,25 @@ export function AnnouncementList() {
               <p className="mt-2 text-sm">No announcements found.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Card list — phones and small tablets */}
+            <div className="space-y-3 p-4 md:hidden">
+              {announcements.map((a) => (
+                <AnnouncementCard
+                  key={a.uuid}
+                  announcement={a}
+                  showActions={showActions}
+                  canUpdate={canUpdate}
+                  canDelete={canDelete}
+                  isEditLoading={editLoadingUuid === a.uuid}
+                  onEdit={() => openEdit(a.uuid)}
+                  onDelete={() => setDel(a)}
+                />
+              ))}
+            </div>
+
+            {/* Table — md and up */}
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-outline-variant/20">
@@ -334,33 +437,18 @@ export function AnnouncementList() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
 
           {!isLoading && pagination && pagination.total > 0 && (
-            <div className="flex flex-col gap-3 border-t border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-on-surface-variant">
-                Showing {announcements.length} of {pagination.total} announcements
-              </p>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage <= 1}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Previous
-                </button>
-                <span className="px-2 text-sm text-on-surface-variant">
-                  Page {currentPage} of {lastPage}
-                </span>
-                <button
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={currentPage >= lastPage}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
+            <TablePagination
+              shown={announcements.length}
+              total={pagination.total}
+              label="announcements"
+              currentPage={currentPage}
+              lastPage={lastPage}
+              onPageChange={setPage}
+            />
           )}
         </div>
       )}

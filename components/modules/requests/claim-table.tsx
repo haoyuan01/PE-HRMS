@@ -8,6 +8,12 @@ import {
 } from "@tanstack/react-table";
 import { useState } from "react";
 import Image from "next/image";
+import { MapPin, ChevronRight } from "lucide-react";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { ClaimHeader } from "@/types/claim";
 
 function claimStatus(claim: ClaimHeader) {
@@ -24,7 +30,15 @@ function formatAmount(amount: string) {
   return `RM ${value.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function ClaimantAvatar({ claim }: { claim: ClaimHeader }) {
+function ClaimantAvatar({
+  claim,
+  align = "center",
+}: {
+  claim: ClaimHeader;
+  // Table cells centre their content; the mobile card aligns to the start and
+  // lets the name truncate against the status pill.
+  align?: "center" | "start";
+}) {
   const personal = claim.user?.personal;
   const name = personal?.full_name ?? claim.user?.email ?? "—";
   const image = personal?.image_path;
@@ -34,7 +48,11 @@ function ClaimantAvatar({ claim }: { claim: ClaimHeader }) {
   const [imageFailed, setImageFailed] = useState(false);
 
   return (
-    <div className="flex items-center justify-center gap-3">
+    <div
+      className={`flex items-center gap-3 ${
+        align === "start" ? "min-w-0 flex-1" : "justify-center"
+      }`}
+    >
       <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-surface-container-high">
         {image && !imageFailed ? (
           <Image
@@ -113,6 +131,52 @@ const columns: ColumnDef<ClaimHeader>[] = [
   },
 ];
 
+// Mobile presentation of a single claim. Five columns cannot be read at phone
+// width, so each row becomes a tappable card carrying the same fields.
+function ClaimCard({
+  claim,
+  onView,
+}: {
+  claim: ClaimHeader;
+  onView?: (uuid: string) => void;
+}) {
+  const status = claimStatus(claim);
+
+  return (
+    <RecordCard
+      onClick={() => onView?.(claim.uuid)}
+      title={<ClaimantAvatar claim={claim} align="start" />}
+      status={
+        <span
+          className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${status.className}`}
+        >
+          {status.label}
+        </span>
+      }
+      meta={
+        <>
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{claim.name}</span>
+        </>
+      }
+      action={
+        <>
+          View Details
+          <ChevronRight className="h-4 w-4" />
+        </>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField
+          label="Total"
+          value={formatAmount(claim.total_amount)}
+          wide
+        />
+      </RecordCardFields>
+    </RecordCard>
+  );
+}
+
 interface ClaimTableProps {
   claims: ClaimHeader[];
   isLoading: boolean;
@@ -150,48 +214,58 @@ export function ClaimTable({ claims, isLoading, onView }: ClaimTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full table-fixed">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-b border-outline-variant/20">
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className={`px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant ${
-                    header.column.id === "name"
-                      ? "w-[30%]"
-                      : header.column.id === "staff"
-                        ? "w-[22%]"
-                        : "w-[16%]"
-                  }`}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="divide-y divide-outline-variant/20">
-          {table.getRowModel().rows.map((row) => (
-            <tr
-              key={row.id}
-              className="transition-colors hover:bg-surface-container-low/50"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-3 text-sm text-center">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Card list — phones and small tablets */}
+      <div className="space-y-3 p-4 md:hidden">
+        {claims.map((claim) => (
+          <ClaimCard key={claim.uuid} claim={claim} onView={onView} />
+        ))}
+      </div>
+
+      {/* Table — md and up, where five columns still fit */}
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full table-fixed">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id} className="border-b border-outline-variant/20">
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className={`px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant ${
+                      header.column.id === "name"
+                        ? "w-[30%]"
+                        : header.column.id === "staff"
+                          ? "w-[22%]"
+                          : "w-[16%]"
+                    }`}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="divide-y divide-outline-variant/20">
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                className="transition-colors hover:bg-surface-container-low/50"
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="px-4 py-3 text-sm text-center">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { TablePagination } from "@/components/common/table-pagination";
 import type { Pagination } from "@/types/user";
 
 interface UserTablePaginationProps {
@@ -12,46 +13,20 @@ export function UserTablePagination({
   onPageChange,
 }: UserTablePaginationProps) {
   const { current_page, last_page, total, per_page } = pagination;
-  const from = (current_page - 1) * per_page + 1;
-  const to = Math.min(current_page * per_page, total);
+  const shown = Math.min(current_page * per_page, total) - (current_page - 1) * per_page;
 
   return (
-    <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-on-surface-variant">
-        Showing {from} of {total} users
-      </p>
-
-      <div className="flex flex-wrap items-center gap-1">
-        <button
-          onClick={() => onPageChange(current_page - 1)}
-          disabled={current_page <= 1}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Previous
-        </button>
-
-        {Array.from({ length: last_page }, (_, i) => i + 1).map((page) => (
-          <button
-            key={page}
-            onClick={() => onPageChange(page)}
-            className={`min-w-[2rem] rounded-lg px-2 py-1.5 text-sm font-medium transition-colors ${
-              page === current_page
-                ? "bg-ds-primary text-on-primary"
-                : "text-on-surface-variant hover:bg-surface-container-high"
-            }`}
-          >
-            {page}
-          </button>
-        ))}
-
-        <button
-          onClick={() => onPageChange(current_page + 1)}
-          disabled={current_page >= last_page}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Next
-        </button>
-      </div>
-    </div>
+    <TablePagination
+      shown={shown}
+      total={total}
+      label="users"
+      currentPage={current_page}
+      lastPage={last_page}
+      onPageChange={onPageChange}
+      // This list kept numbered pages; they survive from `sm` up, windowed so a
+      // long page count no longer wraps into several rows.
+      showPageNumbers
+      divider={false}
+    />
   );
 }

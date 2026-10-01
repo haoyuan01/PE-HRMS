@@ -5,6 +5,11 @@ import { Download, Wallet } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePayrollUsers } from "@/hooks/usePayrollUsers";
 import { PayslipPinModal } from "@/components/modules/payslip/payslip-pin-modal";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { PayrollItem } from "@/types/payroll";
 
 const MONTHS = [
@@ -19,6 +24,50 @@ function isPublished(payroll: PayrollItem) {
 function periodOf(p: PayrollItem) {
   const m = p.month ? MONTHS[Number(p.month) - 1] ?? p.month : "";
   return `${m} ${p.year ?? ""}`.trim() || "—";
+}
+
+// Mobile stand-in for one payslip row — see RESPONSIVE.md. Static shell: the
+// Payslip cell is a button that opens the PIN modal.
+function PayrollMyCard({
+  payroll: p,
+  onView,
+}: {
+  payroll: PayrollItem;
+  onView: () => void;
+}) {
+  return (
+    <RecordCard
+      title={
+        <p className="truncate font-medium text-on-surface">{periodOf(p)}</p>
+      }
+      status={
+        <span
+          className={`shrink-0 text-xs font-medium ${
+            isPublished(p)
+              ? "text-green-600 dark:text-green-400"
+              : "text-on-surface-variant"
+          }`}
+        >
+          {isPublished(p) ? "Published" : "Not Published"}
+        </span>
+      }
+      action={
+        p.attachment_path ? (
+          <button
+            onClick={onView}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
+          >
+            <Download className="h-4 w-4" />
+            View
+          </button>
+        ) : undefined
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField label="Remark" value={p.remark || "—"} wide />
+      </RecordCardFields>
+    </RecordCard>
+  );
 }
 
 export function PayrollMyList() {
@@ -71,7 +120,20 @@ export function PayrollMyList() {
           <p className="text-sm">No payslips available yet.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        {/* Card list — phones and small tablets */}
+        <div className="space-y-3 p-4 md:hidden">
+          {payrolls.map((p) => (
+            <PayrollMyCard
+              key={p.uuid}
+              payroll={p}
+              onView={() => setPinUrl(p.attachment_path ?? null)}
+            />
+          ))}
+        </div>
+
+        {/* Table — md and up */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full">
             <thead>
               <tr className="border-b border-outline-variant/20">
@@ -130,6 +192,7 @@ export function PayrollMyList() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {pinUrl && (

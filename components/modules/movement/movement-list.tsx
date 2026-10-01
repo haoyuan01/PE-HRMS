@@ -14,7 +14,80 @@ import {
   type MovementFilters,
 } from "@/components/modules/movement/movement-filter-modal";
 import { MovementFormModal } from "@/components/modules/movement/movement-form-modal";
+import { TablePagination } from "@/components/common/table-pagination";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { Movement, MovementUser } from "@/types/movement";
+
+// Mobile stand-in for one movement row — see RESPONSIVE.md. Actions stay real
+// buttons, so the card is static rather than one big tap target.
+function MovementCard({
+  movement: m,
+  canUpdate,
+  canDelete,
+  onEdit,
+  onDelete,
+}: {
+  movement: Movement;
+  canUpdate: boolean;
+  canDelete: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <RecordCard
+      title={
+        <div className="flex items-center gap-3">
+          <Avatar user={m.user} />
+          <div className="min-w-0">
+            <p className="truncate font-medium text-on-surface">
+              {m.user?.personal?.full_name ?? m.user?.email ?? "—"}
+            </p>
+            <p className="truncate text-xs text-on-surface-variant">
+              {m.user?.employment?.department?.name ?? "—"}
+            </p>
+          </div>
+        </div>
+      }
+      status={
+        <span className="inline-flex shrink-0 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-medium text-on-surface-variant">
+          {m.movement_type?.name ?? "—"}
+        </span>
+      }
+      action={
+        <>
+          {canUpdate && (
+            <button
+              onClick={onEdit}
+              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+              title="Edit"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={onDelete}
+              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+              title="Delete"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </>
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField label="Start Date" value={formatDate(m.start_date)} />
+        <RecordCardField label="End Date" value={formatDate(m.end_date)} />
+        <RecordCardField label="Location" value={m.location || "—"} wide />
+      </RecordCardFields>
+    </RecordCard>
+  );
+}
 
 function DeleteConfirm({
   movement,
@@ -273,7 +346,23 @@ export function MovementList() {
             <p className="text-sm">No staff movements found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Card list — phones and small tablets */}
+          <div className="space-y-3 p-4 md:hidden">
+            {movements.map((m: Movement) => (
+              <MovementCard
+                key={m.uuid}
+                movement={m}
+                canUpdate={canUpdate}
+                canDelete={canDelete}
+                onEdit={() => setEdit(m)}
+                onDelete={() => setDel(m)}
+              />
+            ))}
+          </div>
+
+          {/* Table — md and up */}
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-outline-variant/20">
@@ -355,33 +444,18 @@ export function MovementList() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {!error && !isLoading && pagination && pagination.total > 0 && (
-          <div className="flex flex-col gap-3 border-t border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-on-surface-variant">
-              Showing {movements.length} of {pagination.total} movements
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage <= 1}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <span className="px-2 text-sm text-on-surface-variant">
-                Page {currentPage} of {lastPage}
-              </span>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={currentPage >= lastPage}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            shown={movements.length}
+            total={pagination.total}
+            label="movements"
+            currentPage={currentPage}
+            lastPage={lastPage}
+            onPageChange={setPage}
+          />
         )}
       </div>
 

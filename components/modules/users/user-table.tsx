@@ -9,6 +9,11 @@ import {
 import { useState } from "react";
 import { Pencil, Trash2, RotateCcw } from "lucide-react";
 import Image from "next/image";
+import {
+  RecordCard,
+  RecordCardField,
+  RecordCardFields,
+} from "@/components/common/record-card";
 import type { UserProfile } from "@/types/user";
 
 function UserAvatar({
@@ -24,7 +29,7 @@ function UserAvatar({
   const [imageFailed, setImageFailed] = useState(false);
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex min-w-0 items-center gap-3">
       <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-surface-container-high">
         {imagePath && !imageFailed ? (
           <Image
@@ -41,7 +46,7 @@ function UserAvatar({
           </span>
         )}
       </div>
-      <span className="text-sm font-medium text-on-surface antialiased">
+      <span className="truncate text-sm font-medium text-on-surface antialiased">
         {user.personal?.full_name ??
           ([firstName, lastName].filter(Boolean).join(" ") ||
           user.email.split("@")[0])}
@@ -151,6 +156,91 @@ const columns: ColumnDef<UserProfile>[] = [
   },
 ];
 
+// Mobile stand-in for one user row — see RESPONSIVE.md. Static shell: the
+// actions are real buttons, not a navigation target.
+function UserCard({
+  user: u,
+  canEdit,
+  canDelete,
+  onEdit,
+  onDelete,
+  onReactivate,
+}: {
+  user: UserProfile;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  onEdit?: (uuid: string) => void;
+  onDelete?: (uuid: string) => void;
+  onReactivate?: (uuid: string) => void;
+}) {
+  return (
+    <RecordCard
+      title={<UserAvatar user={u} />}
+      status={
+        <span
+          className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            u.is_active
+              ? "bg-emerald-500/10 text-emerald-600"
+              : "bg-ds-error/10 text-ds-error"
+          }`}
+        >
+          {u.is_active ? "Active" : "Inactive"}
+        </span>
+      }
+      action={
+        canEdit || canDelete ? (
+          <>
+            {canEdit && (
+              <button
+                onClick={() => onEdit?.(u.uuid)}
+                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                title="Edit user"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
+            {canDelete &&
+              (u.is_active ? (
+                <button
+                  onClick={() => onDelete?.(u.uuid)}
+                  className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-ds-error/10 hover:text-ds-error"
+                  title="Delete user"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => onReactivate?.(u.uuid)}
+                  className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-emerald-500/10 hover:text-emerald-600"
+                  title="Reactivate user"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+              ))}
+          </>
+        ) : undefined
+      }
+    >
+      <RecordCardFields>
+        <RecordCardField label="Email" value={u.email} wide />
+        <RecordCardField
+          label="Position"
+          value={u.employment?.position?.name ?? "—"}
+        />
+        <RecordCardField
+          label="Department"
+          value={u.employment?.department?.name ?? "—"}
+        />
+        <RecordCardField
+          label="Office Branch"
+          value={u.employment?.office?.name ?? "—"}
+          wide
+        />
+      </RecordCardFields>
+    </RecordCard>
+  );
+}
+
 interface UserTableProps {
   users: UserProfile[];
   isLoading: boolean;
@@ -192,42 +282,60 @@ export function UserTable({ users, isLoading, canEdit, canDelete, onEdit, onDele
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="divide-y divide-outline-variant/20">
-          {table.getRowModel().rows.map((row) => (
-            <tr
-              key={row.id}
-              className="transition-colors hover:bg-surface-container-low/50"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-3 text-sm text-center">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Card list — phones and small tablets */}
+      <div className="space-y-3 p-4 md:hidden">
+        {users.map((u) => (
+          <UserCard
+            key={u.uuid}
+            user={u}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onReactivate={onReactivate}
+          />
+        ))}
+      </div>
+
+      {/* Table — md and up */}
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="divide-y divide-outline-variant/20">
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                className="transition-colors hover:bg-surface-container-low/50"
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="px-4 py-3 text-sm text-center">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

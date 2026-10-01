@@ -11,6 +11,7 @@ import { LeaveStatusCards } from "@/components/modules/requests/leave-status-car
 import { LeaveRequestTable } from "@/components/modules/requests/leave-request-table";
 import { ExportModal } from "@/components/modules/requests/export-modal";
 import type { LeaveStatusSummary } from "@/types/leave-request";
+import { TablePagination } from "@/components/common/table-pagination";
 
 type Tab = "my" | "staff";
 
@@ -163,27 +164,14 @@ export default function LeaveFormPage() {
               }
             />
             {pagination && pagination.total > 0 && (
-              <div className="flex flex-col gap-3 border-t border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-on-surface-variant">
-                  Showing {visibleRequests.length} of {pagination.total} requests
-                </p>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={pagination.current_page <= 1}
-                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={pagination.current_page >= pagination.last_page}
-                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+              <TablePagination
+                shown={visibleRequests.length}
+                total={pagination.total}
+                label="requests"
+                currentPage={pagination.current_page}
+                lastPage={pagination.last_page}
+                onPageChange={setPage}
+              />
             )}
           </>
         )}
