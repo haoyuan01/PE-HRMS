@@ -2,8 +2,6 @@ import { apiClient } from "@/lib/api/client";
 import type { LeaveEntitlementListResponse } from "@/types/leave-entitlement";
 
 export interface LeaveEntitlementPayload {
-  entitled_days: number;
-  carried_forward_days: number;
   used_days: number;
   balance_days: number;
   carry_forward_expiry_date?: string;

@@ -181,7 +181,7 @@ export function LeaveEntitlementTable({
                   {col.code}
                 </th>
               ))}
-              <th className="py-3 pl-4 pr-6 text-right text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+              <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                 Actions
               </th>
             </tr>
@@ -204,16 +204,18 @@ export function LeaveEntitlementTable({
                       {entitlementCell(byCode.get(col.code))}
                     </td>
                   ))}
-                  <td className="py-3 pl-4 pr-6 text-right">
-                    {canEdit && (
-                      <button
-                        onClick={() => onEdit?.(user)}
-                        className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
-                        title="Edit entitlements"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                    )}
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      {canEdit && (
+                        <button
+                          onClick={() => onEdit?.(user)}
+                          className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                          title="Edit entitlements"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

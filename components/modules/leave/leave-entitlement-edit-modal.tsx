@@ -18,16 +18,12 @@ function num(value: string | null): string {
 }
 
 interface FormState {
-  entitled_days: string;
-  carried_forward_days: string;
   used_days: string;
   balance_days: string;
   carry_forward_expiry_date: string;
 }
 
 const EMPTY_FORM: FormState = {
-  entitled_days: "",
-  carried_forward_days: "",
   used_days: "",
   balance_days: "",
   carry_forward_expiry_date: "",
@@ -68,8 +64,6 @@ export function LeaveEntitlementEditModal({
   useEffect(() => {
     if (entitlement) {
       setForm({
-        entitled_days: num(entitlement.entitled_days),
-        carried_forward_days: num(entitlement.carried_forward_days),
         used_days: num(entitlement.used_days),
         balance_days: num(entitlement.balance_days),
         carry_forward_expiry_date:
@@ -90,8 +84,6 @@ export function LeaveEntitlementEditModal({
     setIsSaving(true);
     try {
       await leaveEntitlementApi.updateLeaveEntitlement(entitlement.uuid, {
-        entitled_days: Number(form.entitled_days) || 0,
-        carried_forward_days: Number(form.carried_forward_days) || 0,
         used_days: Number(form.used_days) || 0,
         balance_days: Number(form.balance_days) || 0,
         ...(form.carry_forward_expiry_date
@@ -160,26 +152,6 @@ export function LeaveEntitlementEditModal({
           {entitlement ? (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <label className={LABEL}>Entitled Days</label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={form.entitled_days}
-                    onChange={(e) => setField("entitled_days", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className={LABEL}>Carried Forward Days</label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={form.carried_forward_days}
-                    onChange={(e) =>
-                      setField("carried_forward_days", e.target.value)
-                    }
-                  />
-                </div>
                 <div className="space-y-1.5">
                   <label className={LABEL}>Used Days</label>
                   <Input
