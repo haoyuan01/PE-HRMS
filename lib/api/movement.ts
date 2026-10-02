@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client";
+import { downloadBlobResponse } from "@/lib/api/download";
 import type {
   Movement,
   MovementCalendarResponse,
@@ -82,5 +83,14 @@ export const movementApi = {
       map[date] = Array.isArray(movements) ? movements : [];
     }
     return map;
+  },
+
+  // Downloads a single movement as a PDF. The backend names the file via
+  // Content-Disposition; the fallback is only used if it sends none.
+  exportPdf: async (uuid: string): Promise<void> => {
+    const response = await apiClient.get(`/movements/export-pdf/${uuid}`, {
+      responseType: "blob",
+    });
+    downloadBlobResponse(response, "movement.pdf");
   },
 };

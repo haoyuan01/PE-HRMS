@@ -119,13 +119,16 @@ export default function LeaveFormPage() {
           <div />
         )}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsExportOpen(true)}
-            className="flex items-center justify-center gap-2 rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
-          >
-            <Download className="h-4 w-4" />
-            Export
-          </button>
+          {/* Export covers the staff list, so it is offered on that tab only. */}
+          {effectiveTab === "staff" && (
+            <button
+              onClick={() => setIsExportOpen(true)}
+              className="flex items-center justify-center gap-2 rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+          )}
           <button
             onClick={() => router.push("/dashboard/requests/leave/add")}
             className="flex items-center justify-center gap-2 rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90"

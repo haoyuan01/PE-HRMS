@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { Search, SlidersHorizontal, X, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, X, Plus, Pencil, Trash2, Loader2, FileDown } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useMovements } from "@/hooks/useMovements";
@@ -28,12 +28,16 @@ function MovementCard({
   movement: m,
   canUpdate,
   canDelete,
+  isExporting,
+  onExport,
   onEdit,
   onDelete,
 }: {
   movement: Movement;
   canUpdate: boolean;
   canDelete: boolean;
+  isExporting: boolean;
+  onExport: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -59,6 +63,18 @@ function MovementCard({
       }
       action={
         <>
+          <button
+            onClick={onExport}
+            disabled={isExporting}
+            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:opacity-50"
+            title="Export PDF"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="h-4 w-4" />
+            )}
+          </button>
           {canUpdate && (
             <button
               onClick={onEdit}
@@ -203,6 +219,20 @@ export function MovementList() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [edit, setEdit] = useState<Movement | null>(null);
   const [del, setDel] = useState<Movement | null>(null);
+  // Uuid of the movement whose PDF is being generated, so only that row spins.
+  const [exportingUuid, setExportingUuid] = useState<string | null>(null);
+
+  const exportPdf = async (movement: Movement) => {
+    setExportingUuid(movement.uuid);
+    try {
+      await movementApi.exportPdf(movement.uuid);
+      toast.success("Export downloaded.");
+    } catch {
+      toast.error("Failed to export. Please try again.");
+    } finally {
+      setExportingUuid(null);
+    }
+  };
   const [page, setPage] = useState(1);
 
   // Lookups for the filter modal + chip labels.
@@ -355,6 +385,8 @@ export function MovementList() {
                 movement={m}
                 canUpdate={canUpdate}
                 canDelete={canDelete}
+                isExporting={exportingUuid === m.uuid}
+                onExport={() => exportPdf(m)}
                 onEdit={() => setEdit(m)}
                 onDelete={() => setDel(m)}
               />
@@ -419,6 +451,18 @@ export function MovementList() {
                     </td>
                     <td className="py-3 pl-4 pr-6">
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => exportPdf(m)}
+                          disabled={exportingUuid === m.uuid}
+                          className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:opacity-50"
+                          title="Export PDF"
+                        >
+                          {exportingUuid === m.uuid ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileDown className="h-4 w-4" />
+                          )}
+                        </button>
                         {canUpdate && (
                           <button
                             onClick={() => setEdit(m)}

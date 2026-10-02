@@ -191,7 +191,7 @@ export function LeaveRequestTable({
     const staffCol: ColumnDef<LeaveRequest> = {
       id: "staff",
       header: "Staff Name",
-      cell: ({ row }) => <StaffCell user={row.original.user} />,
+      cell: ({ row }) => <StaffCell user={row.original.user} align="start" />,
     };
     const leaveTypeCol: ColumnDef<LeaveRequest> = {
       id: "leave_type",
@@ -296,7 +296,9 @@ export function LeaveRequestTable({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
+                    className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant ${
+                      header.column.id === "staff" ? "text-left" : "text-center"
+                    }`}
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -314,7 +316,12 @@ export function LeaveRequestTable({
                 className="transition-colors hover:bg-surface-container-low/50"
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3 text-center text-sm">
+                  <td
+                    key={cell.id}
+                    className={`px-4 py-3 text-sm ${
+                      cell.column.id === "staff" ? "text-left" : "text-center"
+                    }`}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}

@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client";
+import { downloadBlobResponse } from "@/lib/api/download";
 import type { ClaimHeader } from "@/types/claim";
 import type { Pagination } from "@/types/user";
 
@@ -142,19 +143,6 @@ export const claimApi = {
       responseType: "blob",
     });
 
-    const disposition = response.headers["content-disposition"] as
-      | string
-      | undefined;
-    const match = disposition?.match(/filename="?([^"]+)"?/i);
-    const filename = match?.[1] ?? "claim-headers.xlsx";
-
-    const url = URL.createObjectURL(response.data as Blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    downloadBlobResponse(response, "claim-headers.xlsx");
   },
 };

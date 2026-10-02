@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { format } from "date-fns";
 import { Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,11 @@ export function ExportModal({
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
+  // The range filters on created dates, so a future date can only ever return
+  // nothing. Computed with date-fns rather than toISOString, which would be a
+  // day behind for anyone east of UTC late in the evening.
+  const today = format(new Date(), "yyyy-MM-dd");
+
   const submit = async () => {
     if (!from || !to) {
       setError("Please select both a start and end date.");
@@ -35,6 +41,10 @@ export function ExportModal({
     }
     if (from > to) {
       setError("The start date cannot be after the end date.");
+      return;
+    }
+    if (from > today || to > today) {
+      setError("Dates cannot be in the future.");
       return;
     }
     setError(null);
@@ -80,6 +90,7 @@ export function ExportModal({
               id="export_from"
               type="date"
               value={from}
+              max={to || today}
               onChange={(e) => setFrom(e.target.value)}
               className={FIELD_INPUT}
             />
@@ -93,6 +104,7 @@ export function ExportModal({
               type="date"
               value={to}
               min={from || undefined}
+              max={today}
               onChange={(e) => setTo(e.target.value)}
               className={FIELD_INPUT}
             />
