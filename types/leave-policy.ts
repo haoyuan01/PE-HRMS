@@ -19,6 +19,8 @@ export interface LeavePolicy {
   description: string | null;
   allow_half_day: boolean;
   carry_forward_days: string;
+  // May be negative — the allowance for going below zero balance.
+  allowed_negative_days: string;
   carry_forward_expiry_month: string | null;
   carry_forward_expiry_date: string | null;
   is_handover_required: boolean;
@@ -26,6 +28,7 @@ export interface LeavePolicy {
   min_notice_days: string;
   requires_attachment: boolean;
   is_paid: boolean;
+  is_prorated: boolean;
   is_active: boolean;
   created_by: string;
   created_at: string;

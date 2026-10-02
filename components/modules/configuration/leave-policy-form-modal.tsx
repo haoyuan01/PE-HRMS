@@ -8,6 +8,8 @@ import axios from "axios";
 import { Loader2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { MonthDayPicker } from "@/components/common/month-day-picker";
+import { RequiredMark } from "@/components/common/required-mark";
 import { leavePolicyApi, type LeavePolicyPayload } from "@/lib/api/leavePolicy";
 import type { LeavePolicy } from "@/types/leave-policy";
 
@@ -37,6 +39,14 @@ const tierSchema = z.object({
 const requiredNum = (label: string) =>
   z.string().min(1, `${label} is required`);
 
+// Required numeric field that may be negative. The plain requiredNum above only
+// checks for a value, so this one also rejects non-numeric input.
+const requiredSignedNum = (label: string) =>
+  z
+    .string()
+    .min(1, `${label} is required`)
+    .refine((v) => !Number.isNaN(Number(v)), `${label} must be a number`);
+
 // Required numeric field that must fall within [min, max].
 const requiredRange = (min: number, max: number, label: string) =>
   z.string().refine(
@@ -52,9 +62,11 @@ const schema = z
     allow_half_day: z.boolean(),
     requires_attachment: z.boolean(),
     is_paid: z.boolean(),
+    is_prorated: z.boolean(),
     is_handover_required: z.boolean(),
     min_notice_days: requiredNum("Min notice days"),
     carry_forward_days: requiredNum("Carry forward days"),
+    allowed_negative_days: requiredSignedNum("Negative days"),
     carry_forward_expiry_date: requiredRange(1, 31, "Carry forward date"),
     carry_forward_expiry_month: requiredRange(1, 12, "Carry forward month"),
     handover_min_days: z.string(),
@@ -119,9 +131,11 @@ const EMPTY_VALUES: FormValues = {
   allow_half_day: false,
   requires_attachment: false,
   is_paid: false,
+  is_prorated: false,
   is_handover_required: false,
   min_notice_days: "",
   carry_forward_days: "",
+  allowed_negative_days: "",
   carry_forward_expiry_date: "",
   carry_forward_expiry_month: "",
   handover_min_days: "",
@@ -159,9 +173,11 @@ export function LeavePolicyFormModal({
           allow_half_day: policy.allow_half_day,
           requires_attachment: policy.requires_attachment,
           is_paid: policy.is_paid,
+          is_prorated: policy.is_prorated,
           is_handover_required: policy.is_handover_required,
           min_notice_days: num(policy.min_notice_days),
           carry_forward_days: num(policy.carry_forward_days),
+          allowed_negative_days: num(policy.allowed_negative_days),
           carry_forward_expiry_date: num(policy.carry_forward_expiry_date),
           carry_forward_expiry_month: num(policy.carry_forward_expiry_month),
           handover_min_days: num(policy.handover_min_days),
@@ -188,6 +204,11 @@ export function LeavePolicyFormModal({
     if (!isHandoverRequired) setValue("handover_min_days", "");
   }, [isHandoverRequired, setValue]);
 
+  // The carry-forward expiry is one recurring date, held as two form fields so
+  // the payload keys stay as the API expects them.
+  const expiryMonth = useWatch({ control, name: "carry_forward_expiry_month" });
+  const expiryDay = useWatch({ control, name: "carry_forward_expiry_date" });
+
   const onSubmit = async (data: FormValues) => {
     const payload: LeavePolicyPayload = {
       name: data.name,
@@ -196,8 +217,10 @@ export function LeavePolicyFormModal({
       allow_half_day: data.allow_half_day,
       requires_attachment: data.requires_attachment,
       is_paid: data.is_paid,
+      is_prorated: data.is_prorated,
       is_handover_required: data.is_handover_required,
       carry_forward_days: Number(data.carry_forward_days) || 0,
+      allowed_negative_days: Number(data.allowed_negative_days) || 0,
       min_notice_days: Number(data.min_notice_days) || 0,
       handover_min_days: Number(data.handover_min_days) || 0,
       leave_policy_tiers: data.leave_policy_tiers.map((t) => ({
@@ -256,14 +279,20 @@ export function LeavePolicyFormModal({
           {/* Name + Code */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className={LABEL}>Name</label>
+              <label className={LABEL}>
+                Name
+                <RequiredMark />
+              </label>
               <Input {...register("name")} />
               {errors.name && (
                 <p className="text-xs text-ds-error">{errors.name.message}</p>
               )}
             </div>
             <div className="space-y-1.5">
-              <label className={LABEL}>Code</label>
+              <label className={LABEL}>
+                Code
+                <RequiredMark />
+              </label>
               <Input {...register("code")} />
               {errors.code && (
                 <p className="text-xs text-ds-error">{errors.code.message}</p>
@@ -273,7 +302,10 @@ export function LeavePolicyFormModal({
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className={LABEL}>Description</label>
+            <label className={LABEL}>
+              Description
+              <RequiredMark />
+            </label>
             <textarea
               {...register("description")}
               rows={3}
@@ -286,7 +318,8 @@ export function LeavePolicyFormModal({
             )}
           </div>
 
-          {/* Toggle row */}
+          {/* Options — every boolean in one group, so none of them sit wedged
+              between number inputs needing their own baseline alignment. */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Controller
               control={control}
@@ -321,12 +354,37 @@ export function LeavePolicyFormModal({
                 />
               )}
             />
+            <Controller
+              control={control}
+              name="is_prorated"
+              render={({ field }) => (
+                <Toggle
+                  label="Is Prorated"
+                  checked={field.value}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="is_handover_required"
+              render={({ field }) => (
+                <Toggle
+                  label="Hand Over Required"
+                  checked={field.value}
+                  onChange={field.onChange}
+                />
+              )}
+            />
           </div>
 
-          {/* Notice / carry forward days / handover required */}
+          {/* Day counts */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <label className={LABEL}>Min. Notice Days</label>
+              <label className={LABEL}>
+                Min. Notice Days
+                <RequiredMark />
+              </label>
               <Input type="number" step="any" {...register("min_notice_days")} />
               {errors.min_notice_days && (
                 <p className="text-xs text-ds-error">
@@ -335,7 +393,10 @@ export function LeavePolicyFormModal({
               )}
             </div>
             <div className="space-y-1.5">
-              <label className={LABEL}>Carry Forward Days</label>
+              <label className={LABEL}>
+                Carry Forward Days
+                <RequiredMark />
+              </label>
               <Input type="number" step="any" {...register("carry_forward_days")} />
               {errors.carry_forward_days && (
                 <p className="text-xs text-ds-error">
@@ -343,53 +404,57 @@ export function LeavePolicyFormModal({
                 </p>
               )}
             </div>
-            <div className="flex items-end pb-2.5">
-              <Controller
-                control={control}
-                name="is_handover_required"
-                render={({ field }) => (
-                  <div className="w-full">
-                    <Toggle
-                      label="Hand Over Required"
-                      checked={field.value}
-                      onChange={field.onChange}
-                    />
-                  </div>
-                )}
+            <div className="space-y-1.5">
+              <label className={LABEL}>
+                Negative Days
+                <RequiredMark />
+              </label>
+              <Input
+                type="number"
+                step="any"
+                {...register("allowed_negative_days")}
               />
+              {errors.allowed_negative_days && (
+                <p className="text-xs text-ds-error">
+                  {errors.allowed_negative_days.message}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Carry forward date + handover min days */}
+          {/* Carry forward expiry — one recurring date picked on a calendar. The
+              payload is unchanged: carry_forward_expiry_month 1-12 and
+              carry_forward_expiry_date as the day of that month. */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <label className={LABEL}>Carry Forward Date (Day)</label>
-              <Input
-                type="number"
-                step="any"
-                {...register("carry_forward_expiry_date")}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className={LABEL}>
+                Carry Forward Expiry Date
+                <RequiredMark />
+              </label>
+              <MonthDayPicker
+                month={expiryMonth}
+                day={expiryDay}
+                onChange={(month, day) => {
+                  setValue("carry_forward_expiry_month", month, {
+                    shouldValidate: true,
+                  });
+                  setValue("carry_forward_expiry_date", day, {
+                    shouldValidate: true,
+                  });
+                }}
               />
-              {errors.carry_forward_expiry_date && (
+              {(errors.carry_forward_expiry_month ||
+                errors.carry_forward_expiry_date) && (
                 <p className="text-xs text-ds-error">
-                  {errors.carry_forward_expiry_date.message}
+                  Carry forward expiry date is required
                 </p>
               )}
             </div>
             <div className="space-y-1.5">
-              <label className={LABEL}>Carry Forward Month</label>
-              <Input
-                type="number"
-                step="any"
-                {...register("carry_forward_expiry_month")}
-              />
-              {errors.carry_forward_expiry_month && (
-                <p className="text-xs text-ds-error">
-                  {errors.carry_forward_expiry_month.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <label className={LABEL}>Handover Min Days</label>
+              <label className={LABEL}>
+                Handover Min Days
+                {isHandoverRequired && <RequiredMark />}
+              </label>
               <Input
                 type="number"
                 step="any"
@@ -443,7 +508,10 @@ export function LeavePolicyFormModal({
                 <div key={tier.id} className="space-y-1">
                   <div className="flex items-end gap-3">
                     <div className="flex-1 space-y-1.5">
-                      <label className={LABEL}>Min Service Year</label>
+                      <label className={LABEL}>
+                Min Service Year
+                <RequiredMark />
+              </label>
                       <Input
                         type="number"
                         step="any"
@@ -453,7 +521,10 @@ export function LeavePolicyFormModal({
                       />
                     </div>
                     <div className="flex-1 space-y-1.5">
-                      <label className={LABEL}>Max Service Year</label>
+                      <label className={LABEL}>
+                Max Service Year
+                <RequiredMark />
+              </label>
                       <Input
                         type="number"
                         step="any"
@@ -463,7 +534,10 @@ export function LeavePolicyFormModal({
                       />
                     </div>
                     <div className="flex-1 space-y-1.5">
-                      <label className={LABEL}>Entitled Days</label>
+                      <label className={LABEL}>
+                Entitled Days
+                <RequiredMark />
+              </label>
                       <Input
                         type="number"
                         step="any"

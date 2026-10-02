@@ -152,6 +152,22 @@ Props: `shown`, `total`, `label` (plural noun), `currentPage`, `lastPage`,
 - Every list shows "Page N of M" now, including the ones that previously showed
   only Previous / Next — on a phone you cannot see where you are otherwise.
 
+## Calendars
+
+`components/modules/leave/attendance-calendar.tsx` is the month grid, shared by
+the Leave page and (via `movement/movement-calendar.tsx`) Staff Movement — one
+change covers both.
+
+A month grid stays seven columns at every width, so below `md` the cells are
+about 45px wide and a text chip truncates to roughly two characters. Below `md`
+the chips are therefore replaced by **solid tone dots** (`TONE_DOTS`), up to
+`MAX_DOTS` with the remainder collapsed into a `+N` count; cells shrink to
+`min-h-[56px]`. From `md` up the labelled chips return unchanged.
+
+This only works because tapping a day with events opens a day modal on both
+calendars — the dots say *something is here*, the modal says what. Do not adopt
+the dots on a calendar that has no `onDayClick` tap-through.
+
 ## Design Rules
 
 - **Surfaces, not lines.** The card is `surface-container-low` on the white

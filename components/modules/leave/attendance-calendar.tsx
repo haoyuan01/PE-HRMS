@@ -25,6 +25,18 @@ const TONE_CLASSES: Record<NonNullable<AttendanceEvent["tone"]>, string> = {
   green: "bg-emerald-500/10 text-emerald-600",
 };
 
+// Solid fills for the mobile dots — the tinted chip backgrounds above are far
+// too faint at 6px.
+const TONE_DOTS: Record<NonNullable<AttendanceEvent["tone"]>, string> = {
+  amber: "bg-amber-500",
+  red: "bg-ds-error",
+  blue: "bg-blue-500",
+  green: "bg-emerald-500",
+};
+
+// Dots shown before collapsing the rest into a "+N" count.
+const MAX_DOTS = 3;
+
 interface AttendanceCalendarProps {
   // Leave events keyed by "yyyy-MM-dd".
   events?: Record<string, AttendanceEvent[]>;
@@ -73,14 +85,14 @@ export function AttendanceCalendar({
           )}
           <button
             onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
             aria-label="Previous month"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
             aria-label="Next month"
           >
             <ChevronRight className="h-4 w-4" />
@@ -120,7 +132,7 @@ export function AttendanceCalendar({
                     }
                   : undefined
               }
-              className={`min-h-[76px] border-b border-r border-outline-variant/10 p-1.5 first:border-l ${
+              className={`min-h-[56px] border-b border-r border-outline-variant/10 p-1.5 first:border-l md:min-h-[76px] ${
                 inMonth ? "" : "bg-surface-container-low/40"
               } ${
                 clickable
@@ -139,7 +151,30 @@ export function AttendanceCalendar({
               >
                 {format(day, "d")}
               </span>
-              <div className="mt-1 space-y-1">
+              {/* Dots below md: a 7-column grid leaves ~45px per cell on a
+                  phone, where a chip truncates to about two characters. Tapping
+                  the day opens the full list, so the dots only need to say that
+                  something is there. */}
+              {dayEvents.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1 md:hidden">
+                  {dayEvents.slice(0, MAX_DOTS).map((event, i) => (
+                    <span
+                      key={i}
+                      title={event.label}
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                        TONE_DOTS[event.tone ?? "amber"]
+                      }`}
+                    />
+                  ))}
+                  {dayEvents.length > MAX_DOTS && (
+                    <span className="text-[0.6rem] font-medium leading-none text-on-surface-variant">
+                      +{dayEvents.length - MAX_DOTS}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-1 hidden space-y-1 md:block">
                 {dayEvents.map((event, i) => (
                   <div
                     key={i}

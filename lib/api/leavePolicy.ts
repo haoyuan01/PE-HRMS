@@ -13,6 +13,8 @@ export interface LeavePolicyPayload {
   description: string;
   allow_half_day: boolean;
   carry_forward_days: number;
+  // May be negative.
+  allowed_negative_days: number;
   // The backend validates these as 1-12 / 1-31 only when present, so they are
   // omitted entirely (not sent as 0) when the policy has no carry-forward expiry.
   carry_forward_expiry_month?: number;
@@ -22,6 +24,7 @@ export interface LeavePolicyPayload {
   min_notice_days: number;
   requires_attachment: boolean;
   is_paid: boolean;
+  is_prorated: boolean;
   leave_policy_tiers: LeavePolicyTierPayload[];
 }
 
