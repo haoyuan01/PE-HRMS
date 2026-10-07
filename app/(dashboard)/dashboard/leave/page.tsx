@@ -9,11 +9,16 @@ import { AttendanceCalendar } from "@/components/modules/leave/attendance-calend
 import { LeaveEntitlementTable } from "@/components/modules/leave/leave-entitlement-table";
 import { LeaveDayModal } from "@/components/modules/leave/leave-day-modal";
 import { LeaveEntitlementEditModal } from "@/components/modules/leave/leave-entitlement-edit-modal";
+import { TablePagination } from "@/components/common/table-pagination";
 import type {
   AttendanceEvent,
   LeaveEntitlementUser,
 } from "@/types/leave-entitlement";
 import type { CalendarDaySummary } from "@/types/leave-request";
+
+// Rows per page. The hook loads every entitlement at once, so paging is
+// client-side over the filtered rows, as on the certificate list.
+const PAGE_SIZE = 10;
 
 export default function LeaveEntitlementPage() {
   const { can } = usePermissions();
@@ -21,6 +26,7 @@ export default function LeaveEntitlementPage() {
   const { users, policyColumns, isLoading, error, refetch } =
     useLeaveEntitlements();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const [summaries, setSummaries] = useState<
     Record<string, CalendarDaySummary>
@@ -70,6 +76,17 @@ export default function LeaveEntitlementPage() {
     });
   }, [users, search]);
 
+  const totalPages = Math.max(1, Math.ceil(visibleUsers.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedUsers = useMemo(
+    () =>
+      visibleUsers.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE
+      ),
+    [visibleUsers, currentPage]
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -98,7 +115,10 @@ export default function LeaveEntitlementPage() {
             type="text"
             placeholder="Search employees..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="h-9 w-full rounded-lg border-0 bg-surface-container-low pl-9 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-1 focus:ring-ds-primary/30 transition-all"
           />
         </div>
@@ -117,13 +137,25 @@ export default function LeaveEntitlementPage() {
             </button>
           </div>
         ) : (
-          <LeaveEntitlementTable
-            users={visibleUsers}
-            policyColumns={policyColumns}
-            isLoading={isLoading}
-            canEdit={canEdit}
-            onEdit={setEditUser}
-          />
+          <>
+            <LeaveEntitlementTable
+              users={pagedUsers}
+              policyColumns={policyColumns}
+              isLoading={isLoading}
+              canEdit={canEdit}
+              onEdit={setEditUser}
+            />
+            {!isLoading && visibleUsers.length > 0 && (
+              <TablePagination
+                shown={pagedUsers.length}
+                total={visibleUsers.length}
+                label="employees"
+                currentPage={currentPage}
+                lastPage={totalPages}
+                onPageChange={setPage}
+              />
+            )}
+          </>
         )}
       </div>
 
