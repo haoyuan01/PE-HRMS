@@ -8,11 +8,20 @@ export interface LeaveEntitlementPayload {
 }
 
 export const leaveEntitlementApi = {
+  // Newest first by default, matching the order the list is expected in.
+  // `name` filters server-side on the employee name.
   getLeaveEntitlements: async (params?: {
     user_uuid?: string;
+    name?: string;
+    sortBy?: string;
+    orderBy?: string;
   }): Promise<LeaveEntitlementListResponse> => {
-    const query: Record<string, unknown> = {};
+    const query: Record<string, unknown> = {
+      sortBy: params?.sortBy ?? "created_at",
+      orderBy: params?.orderBy ?? "desc",
+    };
     if (params?.user_uuid) query.user_uuid = params.user_uuid;
+    if (params?.name) query.name = params.name;
 
     const response = await apiClient.get<LeaveEntitlementListResponse>(
       "/leave-entitlements",

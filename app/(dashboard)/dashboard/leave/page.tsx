@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Search } from "lucide-react";
 import { useLeaveEntitlements } from "@/hooks/useLeaveEntitlements";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -23,10 +23,20 @@ const PAGE_SIZE = 10;
 export default function LeaveEntitlementPage() {
   const { can } = usePermissions();
   const canEdit = can("leave_entitlement_update");
-  const { users, policyColumns, isLoading, error, refetch } =
-    useLeaveEntitlements();
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const { users, policyColumns, isLoading, error, refetch } =
+    useLeaveEntitlements(search);
+
+  // Debounced live search — the API filters by name, so don't fire per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const [summaries, setSummaries] = useState<
     Record<string, CalendarDaySummary>
@@ -63,28 +73,11 @@ export default function LeaveEntitlementPage() {
     return events;
   }, [summaries]);
 
-  // Client-side name/email filter over the loaded entitlement rows.
-  const visibleUsers = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return users;
-    return users.filter((u) => {
-      const name = u.personal?.full_name ?? u.email;
-      return (
-        name.toLowerCase().includes(term) ||
-        u.email.toLowerCase().includes(term)
-      );
-    });
-  }, [users, search]);
-
-  const totalPages = Math.max(1, Math.ceil(visibleUsers.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedUsers = useMemo(
-    () =>
-      visibleUsers.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE
-      ),
-    [visibleUsers, currentPage]
+    () => users.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [users, currentPage]
   );
 
   return (
@@ -114,11 +107,8 @@ export default function LeaveEntitlementPage() {
           <input
             type="text"
             placeholder="Search employees..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="h-9 w-full rounded-lg border-0 bg-surface-container-low pl-9 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-1 focus:ring-ds-primary/30 transition-all"
           />
         </div>
@@ -145,10 +135,10 @@ export default function LeaveEntitlementPage() {
               canEdit={canEdit}
               onEdit={setEditUser}
             />
-            {!isLoading && visibleUsers.length > 0 && (
+            {!isLoading && users.length > 0 && (
               <TablePagination
                 shown={pagedUsers.length}
-                total={visibleUsers.length}
+                total={users.length}
                 label="employees"
                 currentPage={currentPage}
                 lastPage={totalPages}

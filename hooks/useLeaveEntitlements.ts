@@ -11,35 +11,64 @@ export interface PolicyColumn {
   name: string;
 }
 
-export function useLeaveEntitlements() {
+/**
+ * Loads the leave entitlement rows, filtered server-side by `search` on the
+ * employee name. Policy codes drive the table's dynamic columns and never
+ * change with the search, so they are fetched once rather than on every term.
+ */
+export function useLeaveEntitlements(search?: string) {
   const [users, setUsers] = useState<LeaveEntitlementUser[]>([]);
   const [policyColumns, setPolicyColumns] = useState<PolicyColumn[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
+  const fetchEntitlements = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Policy codes drive the table's dynamic columns (after "User").
-      const [entitlements, policies] = await Promise.all([
-        leaveEntitlementApi.getLeaveEntitlements(),
-        leavePolicyApi.getLeavePolicies({ size: 100 }),
-      ]);
-      setUsers(entitlements.data);
-      setPolicyColumns(
-        policies.data.map((p) => ({ uuid: p.uuid, code: p.code, name: p.name }))
+      const entitlements = await leaveEntitlementApi.getLeaveEntitlements(
+        search ? { name: search } : undefined
       );
+      setUsers(entitlements.data);
     } catch {
       setError("Failed to load leave entitlements.");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [search]);
 
   useEffect(() => {
-    fetch();
-  }, [fetch]);
+    fetchEntitlements();
+  }, [fetchEntitlements]);
 
-  return { users, policyColumns, isLoading, error, refetch: fetch };
+  useEffect(() => {
+    let cancelled = false;
+    leavePolicyApi
+      .getLeavePolicies({ size: 100 })
+      .then((policies) => {
+        if (cancelled) return;
+        setPolicyColumns(
+          policies.data.map((p) => ({
+            uuid: p.uuid,
+            code: p.code,
+            name: p.name,
+          }))
+        );
+      })
+      .catch(() => {
+        // The entitlement rows still render without the policy columns; the
+        // entitlement request owns the visible error state.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return {
+    users,
+    policyColumns,
+    isLoading,
+    error,
+    refetch: fetchEntitlements,
+  };
 }
