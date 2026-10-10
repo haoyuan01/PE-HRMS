@@ -1,6 +1,7 @@
-# Responsive Patterns — Data Tables on Mobile
+# Data Table Patterns
 
-> Companion to `DESIGN.md`. Read this before building or changing any data table.
+> Companion to `DESIGN.md`. Read this before building or changing any data
+> table. Covers column alignment and the mobile card layout.
 
 ---
 
@@ -129,6 +130,35 @@ function LeaveRequestCard({ request, showStaff, onView }: { … }) {
 ```
 
 ---
+
+## Alignment
+
+**Every column is centred.** Canonical implementation:
+`components/modules/users/user-table.tsx`.
+
+| Element     | Classes                                                                       |
+| ----------- | ----------------------------------------------------------------------------- |
+| `<th>`      | `px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant` |
+| `<td>`      | `px-4 py-3 text-center text-sm`                                               |
+| Action cell | `<div className="flex items-center justify-center gap-2">`                    |
+
+- **Uniform `px-4`.** Do not give the first or last column extra edge padding
+  (`pl-6` / `pr-6`): it drifts the column away from where the same column sits in
+  every other table.
+- **Never `text-right` on the action column.** Right-aligning *and* padding it
+  sat the icons against the table edge, visibly further out than anywhere else.
+- **The name column is the one that still reads left**, and it needs no special
+  class. Its content is a flex container (avatar + name) that fills the cell, so
+  it renders left-aligned inside a centred `<td>`. That is what keeps avatars on
+  a shared left edge instead of ragged — do not add `justify-center` to it, and
+  where the avatar component takes an `align` prop, the table wants the centring
+  default while the mobile card wants `"start"`.
+- Dates, counts and status pills are centred with no special casing.
+
+Migrated so far: `users/user-table.tsx`, `requests/claim-table.tsx`,
+`certificate/certificate-users-table.tsx`. The remaining tables still
+left-align; bring one in line when you next touch it rather than sweeping them
+all at once.
 
 ## Pagination
 

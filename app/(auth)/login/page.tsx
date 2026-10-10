@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { Cloud, Lock, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Lock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,8 +74,15 @@ export default function LoginPage() {
     <div className="flex w-full max-w-md flex-col items-center">
       {/* Brand Header */}
       <div className="mb-8 flex flex-col items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container-low">
-          <Cloud className="h-6 w-6 text-ds-primary" />
+        <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-white">
+          <Image
+            src="/pe-logo.jpg"
+            alt={APP_NAME}
+            fill
+            className="object-cover"
+            sizes="48px"
+            priority
+          />
         </div>
         <div className="text-center">
           <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface">

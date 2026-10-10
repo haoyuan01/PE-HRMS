@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   LayoutDashboard,
   FileText,
@@ -14,7 +15,6 @@ import {
   Megaphone,
   ArrowLeftRight,
   LogOut,
-  Cloud,
   ChevronLeft,
   ChevronDown,
   Wallet,
@@ -63,18 +63,18 @@ const navItems: NavItem[] = [
       { label: "Overtime Form", href: "/dashboard/requests/overtime", roles: ["accountant", "director"] },
     ],
   },
-  { label: "Leave Entitlement", href: "/dashboard/leave", icon: CalendarOff, permission: "leave_entitlement_read" },
-  { label: "User Management", href: "/dashboard/users", icon: Users, permission: "user_read" },
-  { label: "Account", href: "/dashboard/account", icon: UserCog },
-  { label: "Certificate", href: "/dashboard/certificates", icon: Award, permission: "user_certificate_read" },
-  { label: "Upcoming Events", href: "/dashboard/events", icon: CalendarDays, permission: "upcoming_event_read" },
-  { label: "Announcement", href: "/dashboard/announcements", icon: Megaphone, permission: "announcement_read" },
   {
     label: "Staff Movement",
     href: "/dashboard/staff-movement",
     icon: ArrowLeftRight,
     permission: "movement_read",
   },
+  { label: "Leave Entitlement", href: "/dashboard/leave", icon: CalendarOff, permission: "leave_entitlement_read" },
+  { label: "User Management", href: "/dashboard/users", icon: Users, permission: "user_read" },
+  { label: "Account", href: "/dashboard/account", icon: UserCog },
+  { label: "Certificate", href: "/dashboard/certificates", icon: Award, permission: "user_certificate_read" },
+  { label: "Upcoming Events", href: "/dashboard/events", icon: CalendarDays, permission: "upcoming_event_read" },
+  { label: "Announcement", href: "/dashboard/announcements", icon: Megaphone, permission: "announcement_read" },
   { label: "Payslip", href: "/dashboard/payslip", icon: Wallet },
   {
     label: "Configuration",
@@ -177,8 +177,15 @@ export function Sidebar() {
       <div className={cn("flex items-center px-5", collapsed ? "h-20 pt-2" : "h-16")}>
         {collapsed ? (
           <div className="flex w-full flex-col items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ds-primary">
-              <Cloud className="h-4 w-4 text-white" />
+            <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white">
+              <Image
+                src="/pe-logo.jpg"
+                alt={APP_NAME}
+                fill
+                className="object-cover"
+                sizes="32px"
+                priority
+              />
             </div>
             <button
               onClick={toggle}
@@ -191,8 +198,15 @@ export function Sidebar() {
         ) : (
           <>
             <div className="flex flex-1 items-center gap-3 min-w-0">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ds-primary">
-                <Cloud className="h-4 w-4 text-white" />
+              <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-white">
+                <Image
+                  src="/pe-logo.jpg"
+                  alt={APP_NAME}
+                  fill
+                  className="object-cover"
+                  sizes="32px"
+                  priority
+                />
               </div>
               <div className="min-w-0">
                 <p className="truncate font-display text-sm font-bold text-on-surface">

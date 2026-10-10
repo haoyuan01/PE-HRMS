@@ -89,6 +89,7 @@ If a boundary is required for accessibility (e.g., in a high-density table), use
 
 - **The No-Divider Rule:** Forbid 1px horizontal lines in lists. Separate items using `16px` of vertical white space or by alternating background subtle tones (`surface_container_low` vs `surface`).
 - **Cards:** Use `lg` (1rem) corner radius for large dashboard cards. Ensure internal padding is generous (minimum `32px` for desktop).
+- **Table Alignment:** Every column in a data table is centred (`text-center` on both `th` and `td`, uniform `px-4`, action icons in a `justify-center` row). The name column still reads left because its avatar + name block is a flex container filling the cell — no extra class. Never right-align the action column. Spec: `RESPONSIVE.md`.
 - **Tables on Mobile:** Below the `md` breakpoint, a data table is not a table — each row becomes a card (`surface_container_low`) whose labelled values sit on white `surface_container_lowest` tiles. Boundaries stay tonal; the horizontal scroll is forbidden. Spec and shared components: `RESPONSIVE.md`.
 
 ### Chips

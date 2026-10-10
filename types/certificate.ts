@@ -8,6 +8,9 @@ export interface UserCertificate {
   attachment_path: string | null;
   // Added by a future backend update; falls back to a generic label if absent.
   attachment_name?: string | null;
+  // Days until valid_until. Negative once expired, and null for a certificate
+  // saved with no expiry date.
+  days_to_expiry?: number | null;
 }
 
 // The list endpoint returns user objects, each with a nested `certificates`

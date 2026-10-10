@@ -31,6 +31,35 @@ import {
 } from "@/components/common/record-card";
 import type { CertificateUser, UserCertificate } from "@/types/certificate";
 
+// "Days left to expire" for one certificate. The backend sends days_to_expiry,
+// which is negative once past valid_until and null when the certificate was
+// saved with no expiry date.
+function DaysToExpiry({ value }: { value?: number | null }) {
+  if (value == null) {
+    return <span className="text-on-surface-variant">—</span>;
+  }
+  const days = Number(value);
+  if (Number.isNaN(days)) {
+    return <span className="text-on-surface-variant">—</span>;
+  }
+  if (days < 0) {
+    return <span className="font-medium text-ds-error">Expired</span>;
+  }
+  if (days === 0) {
+    return <span className="font-medium text-ds-error">Expires today</span>;
+  }
+  return (
+    <span
+      className={
+        // A month out is the point where it needs chasing up.
+        days <= 30 ? "font-medium text-amber-600" : "text-on-surface"
+      }
+    >
+      {days} {days === 1 ? "day" : "days"}
+    </span>
+  );
+}
+
 function formatDate(value: string | null) {
   if (!value) return "—";
   return format(new Date(value), "dd MMM yyyy");
@@ -117,6 +146,14 @@ function CertificateEntry({
           </p>
           <p className="mt-0.5 truncate text-xs text-on-surface">
             {formatDate(c.valid_until)}
+          </p>
+        </div>
+        <div className="col-span-2 min-w-0">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+            Days Left To Expire
+          </p>
+          <p className="mt-0.5 truncate text-xs">
+            <DaysToExpiry value={c.days_to_expiry} />
           </p>
         </div>
       </div>
@@ -487,19 +524,19 @@ export function CertificateUsersTable() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-outline-variant/20">
-                <th className="py-3 pl-6 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                <th className="py-3 pl-6 pr-4 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                   Name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                   Department
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                   Branch Office
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                   Certificates
                 </th>
-                <th className="py-3 pl-4 pr-6 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                <th className="py-3 pl-4 pr-6 text-center text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                   Action
                 </th>
               </tr>
@@ -511,7 +548,7 @@ export function CertificateUsersTable() {
                 return (
                   <Fragment key={u.uuid}>
                     <tr className="transition-colors hover:bg-surface-container-low/50">
-                      <td className="py-3 pl-6 pr-4 text-sm">
+                      <td className="py-3 pl-6 pr-4 text-center text-sm">
                         <div className="flex items-center gap-3">
                           <Avatar user={u} />
                           <p className="min-w-0 truncate font-medium text-on-surface">
@@ -519,16 +556,16 @@ export function CertificateUsersTable() {
                           </p>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-on-surface-variant">
+                      <td className="px-4 py-3 text-center text-sm text-on-surface-variant">
                         {u.employment?.department?.name ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-on-surface-variant">
+                      <td className="px-4 py-3 text-center text-sm text-on-surface-variant">
                         {u.employment?.office?.name ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-on-surface">
+                      <td className="px-4 py-3 text-center text-sm text-on-surface">
                         {certs.length}
                       </td>
-                      <td className="py-3 pl-4 pr-6">
+                      <td className="py-3 pl-4 pr-6 text-center">
                         <button
                           onClick={() => toggle(u.uuid)}
                           className="inline-flex items-center gap-1.5 text-sm font-medium text-ds-primary transition-colors hover:text-ds-primary-dim"
@@ -551,19 +588,22 @@ export function CertificateUsersTable() {
                               <table className="w-full table-fixed">
                                 <thead>
                                   <tr className="border-b border-outline-variant/20 bg-surface-container-low/60">
-                                    <th className="w-[24%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[22%] px-4 py-2 text-center text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Certificate
                                     </th>
-                                    <th className="w-[24%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[18%] px-4 py-2 text-center text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Organization
                                     </th>
-                                    <th className="w-[20%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[15%] px-4 py-2 text-center text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Date Applied
                                     </th>
-                                    <th className="w-[20%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[15%] px-4 py-2 text-center text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Valid Until
                                     </th>
-                                    <th className="w-[12%] px-4 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                    <th className="w-[18%] px-4 py-2 text-center text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+                                      Days Left To Expire
+                                    </th>
+                                    <th className="w-[12%] px-4 py-2 text-center text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
                                       Action
                                     </th>
                                   </tr>
@@ -571,7 +611,7 @@ export function CertificateUsersTable() {
                                 <tbody className="divide-y divide-outline-variant/20">
                                   {certs.map((c) => (
                                     <tr key={c.uuid} className="bg-surface-container-lowest">
-                                      <td className="px-4 py-2.5 text-xs font-medium text-on-surface">
+                                      <td className="px-4 py-2.5 text-center text-xs font-medium text-on-surface">
                                         <div className="flex items-center gap-2">
                                           {c.attachment_path && (
                                             <a
@@ -587,17 +627,20 @@ export function CertificateUsersTable() {
                                           <span className="truncate">{c.name}</span>
                                         </div>
                                       </td>
-                                      <td className="truncate px-4 py-2.5 text-xs text-on-surface-variant">
+                                      <td className="truncate px-4 py-2.5 text-center text-xs text-on-surface-variant">
                                         {c.organization || "—"}
                                       </td>
-                                      <td className="px-4 py-2.5 text-xs text-on-surface">
+                                      <td className="px-4 py-2.5 text-center text-xs text-on-surface">
                                         {formatDate(c.date_applied)}
                                       </td>
-                                      <td className="px-4 py-2.5 text-xs text-on-surface">
+                                      <td className="px-4 py-2.5 text-center text-xs text-on-surface">
                                         {formatDate(c.valid_until)}
                                       </td>
-                                      <td className="px-4 py-2.5">
-                                        <div className="flex items-center gap-1">
+                                      <td className="px-4 py-2.5 text-center text-xs">
+                                        <DaysToExpiry value={c.days_to_expiry} />
+                                      </td>
+                                      <td className="px-4 py-2.5 text-center">
+                                        <div className="flex items-center justify-center gap-1">
                                           {canUpdate && (
                                           <button
                                             onClick={() =>
