@@ -29,6 +29,7 @@ export async function GET() {
   let isManager = false;
   let isAccountant = false;
   let isDirector = false;
+  let isDev = false;
   const empCookie = cookieStore.get(EMPLOYMENT_COOKIE_NAME)?.value;
   if (empCookie) {
     try {
@@ -36,6 +37,7 @@ export async function GET() {
       isManager = parsed.is_manager === true;
       isAccountant = parsed.is_accountant === true;
       isDirector = parsed.is_director === true;
+      isDev = parsed.is_dev === true;
     } catch {
       // Ignore malformed cookie
     }
@@ -66,6 +68,7 @@ export async function GET() {
           isManager = employment.is_manager === true;
           isAccountant = employment.is_accountant === true;
           isDirector = employment.is_director === true;
+          isDev = employment.is_dev === true;
         }
         return NextResponse.json({
           authenticated: true,
@@ -74,6 +77,7 @@ export async function GET() {
           isManager,
           isAccountant,
           isDirector,
+          isDev,
         });
       }
     } catch {
@@ -81,5 +85,5 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ authenticated: true, permissions, isManager, isAccountant, isDirector });
+  return NextResponse.json({ authenticated: true, permissions, isManager, isAccountant, isDirector, isDev });
 }

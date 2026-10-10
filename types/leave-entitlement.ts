@@ -1,6 +1,21 @@
 import type { Pagination } from "@/types/user";
 import type { LeavePolicy } from "@/types/leave-policy";
 
+// One movement on an entitlement's balance — an allocation, a carry-forward, a
+// prorated grant or a manual adjustment. Day counts come back as decimal
+// strings, as elsewhere in this API.
+export interface LeaveEntitlementLog {
+  uuid?: string;
+  assigned_days: string;
+  used_days: string;
+  assigned_at: string | null;
+  available_at: string | null;
+  expired_at: string | null;
+  is_carry_forward: boolean;
+  is_prorated: boolean;
+  is_manual: boolean;
+}
+
 export interface LeaveEntitlement {
   uuid: string;
   year: string;
@@ -11,6 +26,7 @@ export interface LeaveEntitlement {
   carry_forward_expiry_date: string | null;
   is_active: boolean;
   leave_policy: LeavePolicy;
+  leave_entitlement_logs?: LeaveEntitlementLog[];
 }
 
 export interface LeaveEntitlementUser {

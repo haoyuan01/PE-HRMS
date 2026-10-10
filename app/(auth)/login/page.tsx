@@ -61,6 +61,7 @@ export default function LoginPage() {
         isManager: employment?.is_manager === true,
         isAccountant: employment?.is_accountant === true,
         isDirector: employment?.is_director === true,
+        isDev: employment?.is_dev === true,
       });
       router.push(ROUTES.DASHBOARD);
     } catch {

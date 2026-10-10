@@ -7,6 +7,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   isManager: false,
   isAccountant: false,
   isDirector: false,
+  isDev: false,
   isAuthenticated: false,
   hasHydrated: false,
   setUser: (user) =>
@@ -15,8 +16,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
       isAuthenticated: true,
     }),
   setPermissions: (permissions) => set({ permissions }),
-  setEmploymentFlags: ({ isManager, isAccountant, isDirector }) =>
-    set({ isManager, isAccountant, isDirector }),
+  setEmploymentFlags: ({ isManager, isAccountant, isDirector, isDev }) =>
+    set({ isManager, isAccountant, isDirector, isDev }),
   clearAuth: () =>
     set({
       user: null,
@@ -24,6 +25,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
       isManager: false,
       isAccountant: false,
       isDirector: false,
+      isDev: false,
       isAuthenticated: false,
     }),
   setHasHydrated: (state) => set({ hasHydrated: state }),

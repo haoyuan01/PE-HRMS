@@ -35,6 +35,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             isManager: session.isManager === true,
             isAccountant: session.isAccountant === true,
             isDirector: session.isDirector === true,
+            isDev: session.isDev === true,
           });
         } else {
           clearAuth();

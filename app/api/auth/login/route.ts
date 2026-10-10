@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
     is_manager: employment.is_manager === true,
     is_accountant: employment.is_accountant === true,
     is_director: employment.is_director === true,
+    is_dev: employment.is_dev === true,
   };
 
   cookieStore.set(EMPLOYMENT_COOKIE_NAME, JSON.stringify(employmentFlags), {

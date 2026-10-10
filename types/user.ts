@@ -60,6 +60,8 @@ export interface Employment extends AuditFields {
   is_manager: boolean | null;
   is_accountant: boolean | null;
   is_director: boolean | null;
+  // Developer flag — gates internal-only UI such as the entitlement log.
+  is_dev?: boolean | null;
   position: NamedEntity | null;
   department: NamedEntity | null;
   office: Office | null;

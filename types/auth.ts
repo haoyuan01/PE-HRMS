@@ -35,6 +35,8 @@ export interface User {
     is_manager?: boolean | null;
     is_accountant?: boolean | null;
     is_director?: boolean | null;
+    // Developer flag — gates internal-only UI such as the entitlement log.
+    is_dev?: boolean | null;
     [key: string]: unknown;
   } | null;
   roles: Role[];
@@ -61,6 +63,7 @@ export interface SessionResponse {
   isManager?: boolean;
   isAccountant?: boolean;
   isDirector?: boolean;
+  isDev?: boolean;
 }
 
 export interface AuthState {
@@ -69,6 +72,7 @@ export interface AuthState {
   isManager: boolean;
   isAccountant: boolean;
   isDirector: boolean;
+  isDev: boolean;
   isAuthenticated: boolean;
   hasHydrated: boolean;
   setUser: (user: User) => void;
@@ -77,6 +81,7 @@ export interface AuthState {
     isManager: boolean;
     isAccountant: boolean;
     isDirector: boolean;
+    isDev: boolean;
   }) => void;
   clearAuth: () => void;
   setHasHydrated: (state: boolean) => void;

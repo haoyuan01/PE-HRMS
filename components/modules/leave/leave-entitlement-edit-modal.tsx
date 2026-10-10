@@ -3,10 +3,15 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import axios from "axios";
 import { ChevronDown, Loader2, X } from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { leaveEntitlementApi } from "@/lib/api/leaveEntitlement";
-import type { LeaveEntitlementUser } from "@/types/leave-entitlement";
+import { useAuthStore } from "@/stores/useAuthStore";
+import type {
+  LeaveEntitlementUser,
+  LeaveEntitlementLog,
+} from "@/types/leave-entitlement";
 import type { PolicyColumn } from "@/hooks/useLeaveEntitlements";
 
 const LABEL = "text-xs font-medium uppercase tracking-wider text-on-surface-variant";
@@ -15,6 +20,51 @@ function num(value: string | null): string {
   if (value == null || value === "") return "";
   const n = Number(value);
   return Number.isNaN(n) ? "" : String(n);
+}
+
+function formatLogDate(value: string | null): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : format(date, "dd MMM yyyy");
+}
+
+// A labelled value inside a log entry.
+function LogField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-on-surface-variant">
+        {label}
+      </p>
+      <p className="mt-0.5 truncate text-xs text-on-surface">{value}</p>
+    </div>
+  );
+}
+
+// One entry in the entitlement's history. Every field is labelled, including
+// the three flags, so a "False" is as visible as a "True".
+function LogEntry({ log }: { log: LeaveEntitlementLog }) {
+  const trueFalse = (value: boolean) => (value ? "True" : "False");
+
+  return (
+    <div className="rounded-lg bg-surface-container-low p-3">
+      <p className="truncate text-xs font-medium text-on-surface">
+        Assigned {formatLogDate(log.assigned_at)}
+      </p>
+
+      <div className="mt-2 grid grid-cols-2 gap-3">
+        <LogField label="Assigned Days" value={num(log.assigned_days) || "0"} />
+        <LogField label="Used Days" value={num(log.used_days) || "0"} />
+        <LogField label="Available At" value={formatLogDate(log.available_at)} />
+        <LogField label="Expired At" value={formatLogDate(log.expired_at)} />
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        <LogField label="Carry Forward" value={trueFalse(log.is_carry_forward)} />
+        <LogField label="Prorated" value={trueFalse(log.is_prorated)} />
+        <LogField label="Manual" value={trueFalse(log.is_manual)} />
+      </div>
+    </div>
+  );
 }
 
 interface FormState {
@@ -44,6 +94,9 @@ export function LeaveEntitlementEditModal({
 }: LeaveEntitlementEditModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLogOpen, setIsLogOpen] = useState(false);
+  // The log is internal detail — only developers see it.
+  const isDev = useAuthStore((s) => s.isDev);
 
   // Look up the user's entitlement for a given policy uuid.
   const entByPolicy = useMemo(
@@ -58,6 +111,7 @@ export function LeaveEntitlementEditModal({
   );
 
   const entitlement = entByPolicy.get(policyUuid);
+  const logs = entitlement?.leave_entitlement_logs ?? [];
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
   // Repopulate the fields whenever the selected policy (entitlement) changes.
@@ -181,6 +235,45 @@ export function LeaveEntitlementEditModal({
                   }
                 />
               </div>
+
+              {/* Log — the entitlement's history, collapsed by default so it
+                  does not push the editable fields out of view. Developers
+                  only. */}
+              {isDev && (
+              <div className="rounded-xl bg-surface-container-low/40 p-1">
+                <button
+                  type="button"
+                  onClick={() => setIsLogOpen((open) => !open)}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface-container-low"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className={LABEL}>Log</span>
+                    <span className="inline-flex rounded-full bg-surface-container-high px-2 py-0.5 text-[0.65rem] font-semibold text-on-surface">
+                      {logs.length}
+                    </span>
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-on-surface-variant transition-transform ${
+                      isLogOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {isLogOpen && (
+                  <div className="space-y-2 p-2 pt-1">
+                    {logs.length > 0 ? (
+                      logs.map((log, i) => (
+                        <LogEntry key={log.uuid ?? i} log={log} />
+                      ))
+                    ) : (
+                      <p className="py-2 text-center text-xs text-on-surface-variant">
+                        No log entries for this entitlement.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+              )}
             </>
           ) : (
             <p className="py-8 text-center text-sm text-on-surface-variant">
