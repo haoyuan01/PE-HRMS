@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "peachpuff-seal-112546.hostingersite.com",
       },
+      {
+        protocol: "https",
+        hostname: "sandybrown-ibis-211699.hostingersite.com",
+      },
     ],
   },
 };
