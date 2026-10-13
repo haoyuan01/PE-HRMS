@@ -37,7 +37,7 @@ const COUNTRIES = [
 
 const schema = z.object({
   phone_number: z.string(),
-  company_email: z.string(),
+  personal_email: z.string(),
   address_1: z.string(),
   address_2: z.string(),
   address_3: z.string(),
@@ -61,7 +61,7 @@ export function ContactTab({ profile, onSaved }: ContactTabProps) {
     resolver: zodResolver(schema),
     defaultValues: {
       phone_number: "",
-      company_email: "",
+      personal_email: "",
       address_1: "",
       address_2: "",
       address_3: "",
@@ -76,7 +76,7 @@ export function ContactTab({ profile, onSaved }: ContactTabProps) {
     if (profile) {
       reset({
         phone_number: contact?.phone_number ?? "",
-        company_email: contact?.company_email ?? "",
+        personal_email: contact?.personal_email ?? "",
         address_1: contact?.address_1 ?? "",
         address_2: contact?.address_2 ?? "",
         address_3: contact?.address_3 ?? "",
@@ -91,7 +91,7 @@ export function ContactTab({ profile, onSaved }: ContactTabProps) {
   const onSubmit = async (data: FormValues) => {
     try {
       await userApi.updateContact(profile.uuid, {
-        company_email: data.company_email || null,
+        personal_email: data.personal_email || null,
         phone_number: data.phone_number || null,
         address_1: data.address_1 || null,
         address_2: data.address_2 || null,
@@ -123,17 +123,17 @@ export function ContactTab({ profile, onSaved }: ContactTabProps) {
         />
       </div>
 
-      {/* Company Email */}
+      {/* Personal Email */}
       <div className="space-y-2">
-        <Label htmlFor="company_email" className={FIELD_LABEL}>
-          Company Email
+        <Label htmlFor="personal_email" className={FIELD_LABEL}>
+          Personal Email
         </Label>
         <Input
-          id="company_email"
+          id="personal_email"
           type="email"
-          placeholder="name@corporate.com"
+          placeholder="personal@gmail.com"
           className={FIELD_INPUT}
-          {...register("company_email")}
+          {...register("personal_email")}
         />
       </div>
 

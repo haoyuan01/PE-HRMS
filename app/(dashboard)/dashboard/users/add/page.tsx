@@ -83,7 +83,7 @@ const schema = z
     blood_type: z.string(),
     gender: z.string(),
     is_married: z.string(),
-  company_email: z.string(),
+  personal_email: z.string(),
   phone_number: z.string(),
   address_1: z.string(),
   address_2: z.string(),
@@ -137,7 +137,7 @@ const API_FIELD_TO_FORM: Record<string, keyof FormValues> = {
   "personal.blood_type": "blood_type",
   "personal.gender": "gender",
   "personal.is_married": "is_married",
-  "contact.company_email": "company_email",
+  "contact.personal_email": "personal_email",
   "contact.phone_number": "phone_number",
   "contact.address_1": "address_1",
   "contact.address_2": "address_2",
@@ -203,7 +203,7 @@ export default function AddUserPage() {
       blood_type: "",
       gender: "",
       is_married: "",
-      company_email: "",
+      personal_email: "",
       phone_number: "",
       address_1: "",
       address_2: "",
@@ -256,7 +256,7 @@ export default function AddUserPage() {
           image: imageFile || undefined,
         },
         contact: {
-          company_email: data.company_email || undefined,
+          personal_email: data.personal_email || undefined,
           phone_number: data.phone_number || undefined,
           address_1: data.address_1 || undefined,
           address_2: data.address_2 || undefined,
@@ -399,10 +399,10 @@ export default function AddUserPage() {
                 Account Information
               </h3>
               <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
-                {/* Email */}
+                {/* Company Email — the login address. */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className={FIELD_LABEL}>
-                    Email *
+                    Company Email *
                   </Label>
                   <Input
                     id="email"
@@ -755,17 +755,17 @@ export default function AddUserPage() {
                   />
                 </div>
 
-                {/* Company Email */}
+                {/* Personal Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="company_email" className={FIELD_LABEL}>
-                    Company Email
+                  <Label htmlFor="personal_email" className={FIELD_LABEL}>
+                    Personal Email
                   </Label>
                   <Input
-                    id="company_email"
+                    id="personal_email"
                     type="email"
-                    placeholder="Company email"
+                    placeholder="personal@gmail.com"
                     className={FIELD_INPUT}
-                    {...register("company_email")}
+                    {...register("personal_email")}
                   />
                 </div>
 

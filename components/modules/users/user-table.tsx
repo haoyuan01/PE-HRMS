@@ -63,7 +63,7 @@ const columns: ColumnDef<UserProfile>[] = [
   },
   {
     accessorKey: "email",
-    header: "Email",
+    header: "Company Email",
     cell: ({ row }) => (
       <span className="text-on-surface-variant">{row.original.email}</span>
     ),
@@ -222,7 +222,7 @@ function UserCard({
       }
     >
       <RecordCardFields>
-        <RecordCardField label="Email" value={u.email} wide />
+        <RecordCardField label="Company Email" value={u.email} wide />
         <RecordCardField
           label="Position"
           value={u.employment?.position?.name ?? "—"}

@@ -68,7 +68,7 @@ export const userApi = {
   updateContact: async (
     userUuid: string,
     data: {
-      company_email?: string | null;
+      personal_email?: string | null;
       phone_number?: string | null;
       address_1?: string | null;
       address_2?: string | null;
@@ -185,7 +185,7 @@ export const userApi = {
       image?: File;
     };
     contact?: {
-      company_email?: string;
+      personal_email?: string;
       phone_number?: string;
       address_1?: string;
       address_2?: string;
@@ -232,7 +232,7 @@ export const userApi = {
 
     if (data.contact) {
       const c = data.contact;
-      if (c.company_email) formData.append("contact[company_email]", c.company_email);
+      if (c.personal_email) formData.append("contact[personal_email]", c.personal_email);
       if (c.phone_number) formData.append("contact[phone_number]", c.phone_number);
       if (c.address_1) formData.append("contact[address_1]", c.address_1);
       if (c.address_2) formData.append("contact[address_2]", c.address_2);

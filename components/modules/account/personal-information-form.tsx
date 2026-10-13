@@ -41,7 +41,7 @@ const profileSchema = z.object({
   blood_type: z.string(),
   gender: z.string(),
   phone_number: z.string(),
-  company_email: z.string(),
+  personal_email: z.string(),
   address_1: z.string(),
   address_2: z.string(),
   address_3: z.string(),
@@ -98,7 +98,7 @@ export function PersonalInformationForm({
       blood_type: "",
       gender: "",
       phone_number: "",
-      company_email: "",
+      personal_email: "",
       address_1: "",
       address_2: "",
       address_3: "",
@@ -133,7 +133,7 @@ export function PersonalInformationForm({
         blood_type: personal?.blood_type ?? "",
         gender: personal?.gender === true ? "male" : personal?.gender === false ? "female" : "",
         phone_number: contact?.phone_number ?? "",
-        company_email: contact?.company_email ?? "",
+        personal_email: contact?.personal_email ?? "",
         address_1: contact?.address_1 ?? "",
         address_2: contact?.address_2 ?? "",
         address_3: contact?.address_3 ?? "",
@@ -169,7 +169,7 @@ export function PersonalInformationForm({
           image: imageFileRef.current || undefined,
         }),
         userApi.updateContact(profile.uuid, {
-          company_email: data.company_email || null,
+          personal_email: data.personal_email || null,
           phone_number: data.phone_number || null,
           address_1: data.address_1 || null,
           address_2: data.address_2 || null,
@@ -234,11 +234,17 @@ export function PersonalInformationForm({
               <Label htmlFor="email" className={FIELD_LABEL}>
                 Company Email *
               </Label>
+              {/* Not editable from the account page. readOnly rather than
+                  disabled: React Hook Form yields undefined for a disabled
+                  input, which would fail this field's required-email rule and
+                  silently block the whole form from saving. */}
               <Input
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                className={FIELD_INPUT}
+                readOnly
+                tabIndex={-1}
+                className={`${FIELD_INPUT} cursor-not-allowed opacity-60 focus-visible:ring-0`}
                 {...register("email")}
               />
               {errors.email && (
@@ -381,15 +387,15 @@ export function PersonalInformationForm({
 
             {/* Personal Email */}
             <div className="space-y-2">
-              <Label htmlFor="company_email" className={FIELD_LABEL}>
+              <Label htmlFor="personal_email" className={FIELD_LABEL}>
                 Personal Email
               </Label>
               <Input
-                id="company_email"
+                id="personal_email"
                 type="email"
-                placeholder="Company email"
+                placeholder="personal@gmail.com"
                 className={FIELD_INPUT}
-                {...register("company_email")}
+                {...register("personal_email")}
               />
             </div>
 

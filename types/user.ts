@@ -24,7 +24,7 @@ export interface Personal extends AuditFields {
 
 export interface Contact extends AuditFields {
   uuid: string;
-  company_email: string | null;
+  personal_email: string | null;
   phone_number: string | null;
   address_1: string | null;
   address_2: string | null;
@@ -101,7 +101,7 @@ export interface UpdateProfileRequest {
   personal?: Partial<Pick<Personal, "full_name" | "first_name" | "last_name" | "identity_number" | "passport_number" | "passport_expiry_date" | "blood_type" | "gender" | "is_married">> & {
     image?: File;
   };
-  contact?: Partial<Pick<Contact, "company_email" | "phone_number" | "address_1" | "address_2" | "address_3" | "city" | "state" | "postcode" | "country">>;
+  contact?: Partial<Pick<Contact, "personal_email" | "phone_number" | "address_1" | "address_2" | "address_3" | "city" | "state" | "postcode" | "country">>;
   employment?: {
     position_uuid?: string | null;
     department_uuid?: string | null;

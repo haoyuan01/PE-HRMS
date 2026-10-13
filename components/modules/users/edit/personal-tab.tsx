@@ -279,10 +279,11 @@ export function PersonalTab({ profile, onSaved }: PersonalTabProps) {
           )}
         </div>
 
-        {/* Email */}
+        {/* Company Email — the login address, held in the form as
+            `personal_email` but saved to profile.email. */}
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="personal_email" className={FIELD_LABEL}>
-            Email *
+            Company Email *
           </Label>
           <Input
             id="personal_email"
