@@ -15,7 +15,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Petro-Exel | HRMS",
+  title: "Petro-Excel | HRMS",
   description: "Human Resource Management System — Management redefined through simplicity.",
 };
 
