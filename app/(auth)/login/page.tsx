@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { APP_NAME, APP_TAGLINE, ROUTES } from "@/lib/constants";
+import { APP_NAME, ROUTES } from "@/lib/constants";
 
 const loginSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -89,9 +89,6 @@ export default function LoginPage() {
           <h1 className="font-display text-2xl font-bold tracking-tight text-on-surface">
             {APP_NAME}
           </h1>
-          <p className="mt-1 text-sm text-on-surface-variant">
-            {APP_TAGLINE}
-          </p>
         </div>
       </div>
 

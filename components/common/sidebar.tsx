@@ -212,9 +212,6 @@ export function Sidebar() {
                 <p className="truncate font-display text-sm font-bold text-on-surface">
                   {APP_NAME}
                 </p>
-                <p className="truncate text-[11px] text-on-surface-variant">
-                  Ethereal Management
-                </p>
               </div>
             </div>
             <button
