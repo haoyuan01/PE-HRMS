@@ -1,3 +1,5 @@
+import type { Pagination } from "@/types/user";
+
 export interface UserCertificate {
   uuid: string;
   name: string;
@@ -34,4 +36,5 @@ export interface CertificateUser {
 export interface CertificateListResponse {
   success: boolean;
   data: CertificateUser | CertificateUser[];
+  pagination?: Pagination;
 }

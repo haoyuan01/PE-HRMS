@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client";
+import { fetchAllPages } from "@/lib/api/fetch-all-pages";
 import type {
   CertificateListResponse,
   CertificateUser,
@@ -18,13 +19,9 @@ export interface CertificatePayload {
 
 export const certificateApi = {
   // All users with their nested certificates (for the admin listing).
-  getCertificateUsers: async (): Promise<CertificateUser[]> => {
-    const response = await apiClient.get<CertificateListResponse>(
-      "/user-certificates"
-    );
-    const data = response.data.data;
-    return Array.isArray(data) ? data : [data];
-  },
+  // The table filters and pages client-side, so fetch every page.
+  getCertificateUsers: (): Promise<CertificateUser[]> =>
+    fetchAllPages<CertificateUser>("/user-certificates"),
 
   getCertificates: async (userUuid: string): Promise<UserCertificate[]> => {
     const response = await apiClient.get<CertificateListResponse>(

@@ -109,6 +109,11 @@ export const useEmployeeStore = create<EmployeeStore>((set) => ({
 - API functions are grouped by module (e.g., `employeeApi.ts`, `leaveApi.ts`).
 - Handle loading and error states in the component or custom hook that calls the API.
 - The backend is external — base URLs come from environment variables.
+- **Every list endpoint is paginated server-side (15 per page).** Never read only
+  `response.data.data` and treat it as the full set — either page server-side
+  (pass `page`, use `pagination.total` / `last_page`) or use `fetchAllPages`
+  from `lib/api/fetch-all-pages.ts`. Read `PAGINATION.md` before building or
+  changing any listing page.
 
 **Environment variables (`.env.local`):**
 
@@ -204,5 +209,7 @@ npx shadcn@latest add [component]   # Add a new shadcn component
 - When generating forms, always use React Hook Form + Zod, never raw controlled inputs.
 - When generating tables, always use TanStack Table **and** the `RecordCard` mobile
   card list — read `RESPONSIVE.md` before building or changing any data table.
+- When generating a listing page, follow `PAGINATION.md` — the footer total must
+  match the API's `pagination.total`, not the number of rows on page 1.
 - Prefer composition over prop-drilling — use Zustand store for shared state between deeply nested components.
 - Always generate TypeScript types for API response shapes in `/types/`.

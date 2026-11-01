@@ -1,3 +1,5 @@
+import type { Pagination } from "@/types/user";
+
 // A single payroll/payslip record for a user in a given month.
 // NOTE: the exact backend field names for amounts/attachment aren't documented
 // yet — these are best-effort and read defensively in the UI.
@@ -34,4 +36,5 @@ export interface PayrollUser {
 export interface PayrollListResponse {
   success: boolean;
   data: PayrollUser | PayrollUser[];
+  pagination?: Pagination;
 }

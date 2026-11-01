@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api/client";
-import type { PayrollListResponse, PayrollUser } from "@/types/payroll";
+import { fetchAllPages } from "@/lib/api/fetch-all-pages";
+import type { PayrollUser } from "@/types/payroll";
 
 export interface PayrollUsersParams {
   month?: number;
@@ -18,15 +19,9 @@ export interface CreatePayrollPayload {
 
 export const payrollApi = {
   // All users with their nested payrolls for the given month/year (staff list).
-  getPayrollUsers: async (
-    params?: PayrollUsersParams
-  ): Promise<PayrollUser[]> => {
-    const response = await apiClient.get<PayrollListResponse>("/payrolls", {
-      params,
-    });
-    const data = response.data.data;
-    return Array.isArray(data) ? data : [data];
-  },
+  // The staff list filters and pages client-side, so fetch every page.
+  getPayrollUsers: (params?: PayrollUsersParams): Promise<PayrollUser[]> =>
+    fetchAllPages<PayrollUser>("/payrolls", params),
 
   createPayroll: async (
     data: CreatePayrollPayload,

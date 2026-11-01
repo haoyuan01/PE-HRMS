@@ -1,5 +1,9 @@
 import { apiClient } from "@/lib/api/client";
-import type { LeaveEntitlementListResponse } from "@/types/leave-entitlement";
+import { fetchAllPages } from "@/lib/api/fetch-all-pages";
+import type {
+  LeaveEntitlementListResponse,
+  LeaveEntitlementUser,
+} from "@/types/leave-entitlement";
 
 export interface LeaveEntitlementPayload {
   used_days: number;
@@ -23,11 +27,12 @@ export const leaveEntitlementApi = {
     if (params?.user_uuid) query.user_uuid = params.user_uuid;
     if (params?.name) query.name = params.name;
 
-    const response = await apiClient.get<LeaveEntitlementListResponse>(
+    // The leave page pages client-side, so fetch every page.
+    const data = await fetchAllPages<LeaveEntitlementUser>(
       "/leave-entitlements",
-      { params: query }
+      query
     );
-    return response.data;
+    return { success: true, data };
   },
 
   updateLeaveEntitlement: async (
