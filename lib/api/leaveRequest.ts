@@ -46,29 +46,43 @@ export const leaveRequestApi = {
     return response.data.data;
   },
 
-  // Totals shown in the cards above the Leave Requests table.
-  getStatusSummaries: async (): Promise<LeaveStatusSummary> => {
+  // Totals shown in the cards above the Leave Requests table. Takes the same
+  // show_all and month_year as the table so the cards match the rows below.
+  getStatusSummaries: async (params: {
+    show_all: boolean;
+    month_year: string | null;
+  }): Promise<LeaveStatusSummary> => {
     const response = await apiClient.get<{ data: LeaveStatusSummary }>(
-      "/leave-requests/status-summaries"
+      "/leave-requests/status-summaries",
+      {
+        params: {
+          show_all: params.show_all ? 1 : 0,
+          ...(params.month_year ? { month_year: params.month_year } : {}),
+        },
+      }
     );
     return response.data.data;
   },
 
-  getLeaveRequests: async (params?: {
-    page?: number;
-    user_uuid?: string;
-    manager_approver_uuid?: string;
-    is_director?: boolean;
+  // The backend scopes the list from the token: show_all=1 returns the Staff
+  // List (requests the current user can review), show_all=0 their own (My List).
+  // month_year is "MM-YYYY"; null (omitted) shows every month.
+  getLeaveRequests: async (params: {
+    page: number;
+    size: number;
+    show_all: boolean;
+    month_year: string | null;
   }): Promise<LeaveRequestListResponse> => {
-    const query: Record<string, unknown> = { page: params?.page ?? 1 };
-    if (params?.user_uuid) query.user_uuid = params.user_uuid;
-    if (params?.manager_approver_uuid)
-      query.manager_approver_uuid = params.manager_approver_uuid;
-    if (params?.is_director) query.is_director = 1;
-
     const response = await apiClient.get<LeaveRequestListResponse>(
       "/leave-requests",
-      { params: query }
+      {
+        params: {
+          page: params.page,
+          size: params.size,
+          show_all: params.show_all ? 1 : 0,
+          ...(params.month_year ? { month_year: params.month_year } : {}),
+        },
+      }
     );
     return response.data;
   },

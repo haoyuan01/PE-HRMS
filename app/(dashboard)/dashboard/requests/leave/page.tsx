@@ -1,24 +1,31 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, SlidersHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useLeaveRequests } from "@/hooks/useLeaveRequests";
+import { useLeaveStatusSummary } from "@/hooks/useLeaveStatusSummary";
 import { leaveRequestApi } from "@/lib/api/leaveRequest";
 import { LeaveStatusCards } from "@/components/modules/requests/leave-status-cards";
 import { LeaveRequestTable } from "@/components/modules/requests/leave-request-table";
 import { ExportModal } from "@/components/modules/requests/export-modal";
-import type { LeaveStatusSummary } from "@/types/leave-request";
+import {
+  LeaveFilterModal,
+  DEFAULT_LEAVE_FILTERS,
+  MONTH_NAMES,
+  toMonthYear,
+  type LeaveFilters,
+} from "@/components/modules/requests/leave-filter-modal";
 import { TablePagination } from "@/components/common/table-pagination";
 
 type Tab = "my" | "staff";
 
+const PAGE_SIZE = 15;
+
 export default function LeaveFormPage() {
   const router = useRouter();
-  const currentUserUuid = useAuthStore((s) => s.user?.uuid);
-  const isDirector = useAuthStore((s) => s.isDirector);
   // Managers and directors (general managers) get the Staff List; everyone
   // else only sees their own requests (My List).
   const canViewStaff = useAuthStore((s) => s.isManager || s.isDirector);
@@ -26,6 +33,18 @@ export default function LeaveFormPage() {
   const [tab, setTab] = useState<Tab>("my");
   const [page, setPage] = useState(1);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [filters, setFilters] = useState<LeaveFilters>(DEFAULT_LEAVE_FILTERS);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const monthYear = toMonthYear(filters);
+  const filterChip = monthYear
+    ? `${MONTH_NAMES[Number(filters.month) - 1]} ${filters.year}`
+    : null;
+
+  // A new filter is a new result set, so go back to its first page.
+  const applyFilters = (next: LeaveFilters) => {
+    setFilters(next);
+    setPage(1);
+  };
 
   // Open the tab requested via the URL (e.g. ?tab=staff from the dashboard).
   useEffect(() => {
@@ -35,50 +54,22 @@ export default function LeaveFormPage() {
 
   const effectiveTab: Tab = canViewStaff ? tab : "my";
 
-  // My List filters to the current user's own requests. Staff List shows the
-  // requests the current user approves — managers by manager_approver_uuid,
-  // directors via the is_director flag (server-scoped).
-  const params = useMemo(() => {
-    if (effectiveTab === "my") {
-      return {
-        page,
-        ...(currentUserUuid ? { user_uuid: currentUserUuid } : {}),
-      };
-    }
-    return {
-      page,
-      ...(isDirector
-        ? { is_director: true }
-        : currentUserUuid
-        ? { manager_approver_uuid: currentUserUuid }
-        : {}),
-    };
-  }, [effectiveTab, page, currentUserUuid, isDirector]);
+  // The backend scopes both tabs from the token: show_all=1 is the Staff List,
+  // show_all=0 is My List. Paging is server-side (see PAGINATION.md).
+  const { requests, pagination, isLoading, error, refetch } = useLeaveRequests({
+    page,
+    size: PAGE_SIZE,
+    show_all: effectiveTab === "staff",
+    month_year: monthYear,
+  });
 
-  const { requests, pagination, isLoading, error, refetch } =
-    useLeaveRequests(params);
-
-  // Staff List shows other people's requests — the current user's own live
-  // under My List, so exclude them here.
-  const visibleRequests = useMemo(
-    () =>
-      effectiveTab === "staff"
-        ? requests.filter((r) => r.user?.uuid !== currentUserUuid)
-        : requests,
-    [requests, effectiveTab, currentUserUuid]
-  );
-
-  // Status summary cards (global totals) — only for managers/directors.
-  const [summary, setSummary] = useState<LeaveStatusSummary | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-  useEffect(() => {
-    if (!canViewStaff) return;
-    leaveRequestApi
-      .getStatusSummaries()
-      .then(setSummary)
-      .catch(() => setSummary(null))
-      .finally(() => setSummaryLoading(false));
-  }, [canViewStaff]);
+  // Status summary cards — managers/directors only. Same tab and month as
+  // the table, so the totals match the rows below.
+  const { summary, isLoading: summaryLoading } = useLeaveStatusSummary({
+    show_all: effectiveTab === "staff",
+    month_year: monthYear,
+    enabled: canViewStaff,
+  });
 
   const switchTab = (next: Tab) => {
     setTab(next);
@@ -97,27 +88,50 @@ export default function LeaveFormPage() {
         </h1>
       </div>
 
-      {/* Tabs (managers/directors only) + Create button, on one row */}
+      {/* Tabs (managers/directors only) + Filters on the left, actions on the right */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {canViewStaff ? (
-          <div className="flex w-fit items-center gap-1 rounded-lg bg-surface-container-low p-1">
-            {(["my", "staff"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => switchTab(t)}
-                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-                  tab === t
-                    ? "bg-surface-container-lowest text-on-surface shadow-sm"
-                    : "text-on-surface-variant hover:text-on-surface"
-                }`}
-              >
-                {t === "my" ? "My List" : "Staff List"}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div />
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {canViewStaff && (
+            <div className="flex w-fit items-center gap-1 rounded-lg bg-surface-container-low p-1">
+              {(["my", "staff"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => switchTab(t)}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                    tab === t
+                      ? "bg-surface-container-lowest text-on-surface shadow-sm"
+                      : "text-on-surface-variant hover:text-on-surface"
+                  }`}
+                >
+                  {t === "my" ? "My List" : "Staff List"}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen(true)}
+            className="flex items-center gap-2 rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-low"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters
+          </button>
+          {filterChip && (
+            <span className="inline-flex items-center rounded-full bg-surface-container-high px-3 py-1 text-xs font-medium text-on-surface-variant">
+              {filterChip}
+            </span>
+          )}
+          {filterChip && (
+            <button
+              type="button"
+              onClick={() => applyFilters(DEFAULT_LEAVE_FILTERS)}
+              className="flex items-center gap-1.5 rounded-lg border border-ds-error/30 px-3 py-2 text-sm font-medium text-ds-error transition-colors hover:bg-ds-error/10"
+            >
+              <X className="h-3.5 w-3.5" />
+              Reset
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           {/* Export covers the staff list, so it is offered on that tab only. */}
           {effectiveTab === "staff" && (
@@ -159,7 +173,7 @@ export default function LeaveFormPage() {
         ) : (
           <>
             <LeaveRequestTable
-              requests={visibleRequests}
+              requests={requests}
               isLoading={isLoading}
               showStaff={effectiveTab === "staff"}
               onView={(r) =>
@@ -168,7 +182,7 @@ export default function LeaveFormPage() {
             />
             {pagination && pagination.total > 0 && (
               <TablePagination
-                shown={visibleRequests.length}
+                shown={requests.length}
                 total={pagination.total}
                 label="requests"
                 currentPage={pagination.current_page}
@@ -179,6 +193,17 @@ export default function LeaveFormPage() {
           </>
         )}
       </div>
+
+      {isFilterOpen && (
+        <LeaveFilterModal
+          onClose={() => setIsFilterOpen(false)}
+          initialFilters={filters}
+          onApply={(next) => {
+            applyFilters(next);
+            setIsFilterOpen(false);
+          }}
+        />
+      )}
 
       {isExportOpen && (
         <ExportModal
