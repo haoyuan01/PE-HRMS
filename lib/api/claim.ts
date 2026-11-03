@@ -102,20 +102,19 @@ export const claimApi = {
     await apiClient.patch(`/claim-headers/director-reviews/${uuid}`);
   },
 
-  getClaimHeaders: async (params?: {
+  // The backend scopes the list from the token: show_all=1 returns the Staff
+  // List, show_all=0 the current user's own claims (My List).
+  getClaimHeaders: async (params: {
     page?: number;
-    user_uuid?: string;
-    manager_approver_uuid?: string;
-    is_director?: boolean;
+    show_all: boolean;
     name?: string;
     sortBy?: string;
     orderBy?: string;
   }): Promise<ClaimHeaderListResponse> => {
-    const query: Record<string, unknown> = { page: params?.page ?? 1 };
-    if (params?.user_uuid) query.user_uuid = params.user_uuid;
-    if (params?.manager_approver_uuid)
-      query.manager_approver_uuid = params.manager_approver_uuid;
-    if (params?.is_director) query.is_director = 1;
+    const query: Record<string, unknown> = {
+      page: params.page ?? 1,
+      show_all: params.show_all ? 1 : 0,
+    };
     if (params?.name) query.name = params.name;
     if (params?.sortBy) query.sortBy = params.sortBy;
     if (params?.orderBy) query.orderBy = params.orderBy;

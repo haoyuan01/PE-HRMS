@@ -15,14 +15,8 @@ type Tab = "my" | "staff";
 
 export default function ExpensesClaimFormPage() {
   const router = useRouter();
-  const currentUserUuid = useAuthStore((s) => s.user?.uuid);
   // Managers, accountants and directors (general managers) get the Staff List;
   // regular employees only see their own claims (My List).
-  const isDirector = useAuthStore((s) => s.isDirector);
-  const isAccountant = useAuthStore((s) => s.isAccountant);
-  // Accountants see every claim just like directors do, so they share the same
-  // director-scoped query; managers only see the claims they approve.
-  const canViewAllClaims = isDirector || isAccountant;
   const canViewStaff = useAuthStore(
     (s) => s.isManager || s.isAccountant || s.isDirector
   );
@@ -41,46 +35,22 @@ export default function ExpensesClaimFormPage() {
   // Force My List when the user can't view the Staff List.
   const effectiveTab: Tab = canViewStaff ? tab : "my";
 
-  // My List filters to the current user's own claims. Staff List shows the
-  // claims that name the current user as the manager approver — except for
-  // directors (general managers) and accountants, who see every claim (no
-  // approver filter).
-  const params = useMemo(() => {
-    if (effectiveTab === "my") {
-      return {
-        page,
-        ...(currentUserUuid ? { user_uuid: currentUserUuid } : {}),
-        ...(search ? { name: search } : {}),
-      };
-    }
-    return {
+  // The backend scopes both tabs from the token: show_all=1 is the Staff List,
+  // show_all=0 is My List. Paging and search stay server-side.
+  const params = useMemo(
+    () => ({
       page,
-      // Directors and accountants get the full list (handled server-side via
-      // the is_director flag); other approvers filter to claims they approve.
-      ...(canViewAllClaims
-        ? { is_director: true }
-        : currentUserUuid
-        ? { manager_approver_uuid: currentUserUuid }
-        : {}),
+      show_all: effectiveTab === "staff",
       ...(search ? { name: search } : {}),
-      // Newest claims first.
-      sortBy: "created_at",
-      orderBy: "desc",
-    };
-  }, [effectiveTab, page, currentUserUuid, canViewAllClaims, search]);
+      // Newest claims first on the Staff List.
+      ...(effectiveTab === "staff"
+        ? { sortBy: "created_at", orderBy: "desc" }
+        : {}),
+    }),
+    [effectiveTab, page, search]
+  );
 
   const { claims, pagination, isLoading, error, refetch } = useClaimHeaders(params);
-
-  // Staff List shows other people's claims — the current user's own claims
-  // live under My List, so exclude them here. Director scoping is now handled
-  // server-side via the is_director query flag.
-  const visibleClaims = useMemo(
-    () =>
-      effectiveTab === "staff"
-        ? claims.filter((c) => c.user?.uuid !== currentUserUuid)
-        : claims,
-    [claims, effectiveTab, currentUserUuid]
-  );
 
   const switchTab = (next: Tab) => {
     setTab(next);
@@ -181,7 +151,7 @@ export default function ExpensesClaimFormPage() {
         ) : (
           <>
             <ClaimTable
-              claims={visibleClaims}
+              claims={claims}
               isLoading={isLoading}
               onView={(uuid) =>
                 router.push(`/dashboard/requests/expenses/detail?uuid=${uuid}`)
@@ -189,7 +159,7 @@ export default function ExpensesClaimFormPage() {
             />
             {pagination && pagination.total > 0 && (
               <TablePagination
-                shown={visibleClaims.length}
+                shown={claims.length}
                 total={pagination.total}
                 label="results"
                 currentPage={pagination.current_page}
