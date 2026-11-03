@@ -118,16 +118,10 @@ function MiniLeaveTable({
 
 export function LeaveRequestOverview() {
   const canViewRecent = useAuthStore((s) => s.isManager || s.isDirector);
-  const currentUserUuid = useAuthStore((s) => s.user?.uuid);
 
-  const my = useDashboardLeaveRequests(true);
-  const recent = useDashboardLeaveRequests(false, canViewRecent);
-
-  // The current user's own requests live under "My Leave Request", so keep them
-  // out of the recent (staff) list.
-  const recentRequests = recent.requests.filter(
-    (r) => r.user?.uuid !== currentUserUuid
-  );
+  // The backend scopes each table: show_all=0 for My, show_all=1 for Recent.
+  const my = useDashboardLeaveRequests(false);
+  const recent = useDashboardLeaveRequests(true, canViewRecent);
 
   return (
     <div className="space-y-3">
@@ -143,7 +137,7 @@ export function LeaveRequestOverview() {
         {canViewRecent && (
           <MiniLeaveTable
             title="Recent Leave Request"
-            requests={recentRequests}
+            requests={recent.requests}
             isLoading={recent.isLoading}
             primaryLabel="Name"
             primary={(r) => r.user?.personal?.full_name ?? r.user?.email ?? "—"}

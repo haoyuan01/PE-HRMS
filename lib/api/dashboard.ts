@@ -24,20 +24,22 @@ export const dashboardApi = {
     return response.data.data;
   },
 
-  // Leave requests for the dashboard. relevant_to_me scopes to the current
-  // user's own requests ("My"); omitted returns the recent staff requests.
-  getLeaveRequests: async (relevantToMe = false): Promise<LeaveRequest[]> => {
+  // Latest leave requests for the dashboard: show_all=1 is "Recent Leave
+  // Request" (staff), show_all=0 is "My Leave Request".
+  getLeaveRequests: async (showAll: boolean): Promise<LeaveRequest[]> => {
     const response = await apiClient.get<{ data: LeaveRequest[] }>(
       "/dashboards/leave-requests",
-      { params: relevantToMe ? { relevant_to_me: 1 } : {} }
+      { params: { show_all: showAll ? 1 : 0 } }
     );
     return response.data.data ?? [];
   },
 
-  getClaimHeaders: async (relevantToMe = false): Promise<ClaimHeader[]> => {
+  // Latest claims for the dashboard: show_all=1 is "Recent Claim Request"
+  // (staff), show_all=0 is "My Claim Request".
+  getClaimHeaders: async (showAll: boolean): Promise<ClaimHeader[]> => {
     const response = await apiClient.get<{ data: ClaimHeader[] }>(
       "/dashboards/claim-headers",
-      { params: relevantToMe ? { relevant_to_me: 1 } : {} }
+      { params: { show_all: showAll ? 1 : 0 } }
     );
     return response.data.data ?? [];
   },

@@ -113,16 +113,10 @@ function MiniClaimTable({
 
 export function ClaimRequestOverview() {
   const canViewRecent = useAuthStore((s) => s.isAccountant || s.isDirector);
-  const currentUserUuid = useAuthStore((s) => s.user?.uuid);
 
-  const my = useDashboardClaims(true);
-  const recent = useDashboardClaims(false, canViewRecent);
-
-  // The current user's own claims live under "My Claim Request", so keep them
-  // out of the recent (staff) list.
-  const recentClaims = recent.claims.filter(
-    (c) => c.user?.uuid !== currentUserUuid
-  );
+  // The backend scopes each table: show_all=0 for My, show_all=1 for Recent.
+  const my = useDashboardClaims(false);
+  const recent = useDashboardClaims(true, canViewRecent);
 
   return (
     <div className="space-y-3">
@@ -138,7 +132,7 @@ export function ClaimRequestOverview() {
         {canViewRecent && (
           <MiniClaimTable
             title="Recent Claim Request"
-            claims={recentClaims}
+            claims={recent.claims}
             isLoading={recent.isLoading}
             primaryLabel="Name"
             primary={(c) => c.user?.personal?.full_name ?? c.user?.email ?? "—"}
