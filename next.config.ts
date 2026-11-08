@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "sandybrown-ibis-211699.hostingersite.com",
       },
+      {
+        protocol: "https",
+        hostname: "lightsteelblue-woodcock-490289.hostingersite.com",
+      },
     ],
   },
 };
