@@ -40,3 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# graphify (local knowledge graph output)
+graphify-out/
+
+# patch notes (kept local; files committed before this stay tracked)
+patch-notes/
