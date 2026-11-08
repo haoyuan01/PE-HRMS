@@ -19,6 +19,13 @@ const FIELD_BOX =
 
 const LIST_ROUTE = "/dashboard/requests/leave";
 
+function formatDays(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") return "—";
+  const n = Number(value);
+  if (Number.isNaN(n)) return String(value);
+  return `${n} ${n === 1 ? "day" : "days"}`;
+}
+
 function formatDate(value: string | null) {
   if (!value) return "—";
   return format(new Date(value), "dd MMM yyyy");
@@ -144,11 +151,24 @@ function LeaveDetailContent() {
           <section className="rounded-2xl bg-surface-container-lowest p-4 shadow-[var(--shadow-ambient)] sm:p-6">
             <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-3">
               <div className="space-y-2">
+                <p className={FIELD_LABEL}>Applicant Name</p>
+                <div className={FIELD_BOX}>
+                  {leave.user?.personal?.full_name ?? leave.user?.email ?? "—"}
+                </div>
+              </div>
+              <div className="space-y-2">
                 <p className={FIELD_LABEL}>Leave Type</p>
                 <div className={FIELD_BOX}>
                   {leave.leave_entitlement?.leave_policy?.name ?? "—"}
                 </div>
               </div>
+              <div className="space-y-2">
+                <p className={FIELD_LABEL}>Leave Balance</p>
+                <div className={FIELD_BOX}>{formatDays(leave.leave_entitlement?.balance_days)}</div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
               <div className="space-y-2">
                 <p className={FIELD_LABEL}>Date of Application</p>
                 <div className={FIELD_BOX}>
@@ -185,8 +205,7 @@ function LeaveDetailContent() {
               <div className="space-y-2">
                 <p className={FIELD_LABEL}>Duration</p>
                 <div className={FIELD_BOX}>
-                  {Number(leave.total_days)} day
-                  {Number(leave.total_days) === 1 ? "" : "s"}
+                  {formatDays(leave.total_days)}
                 </div>
               </div>
             </div>

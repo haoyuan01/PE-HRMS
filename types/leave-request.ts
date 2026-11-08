@@ -127,6 +127,8 @@ export interface LeaveRequestDetail {
   manager_approver: LeaveRequestPerson | null;
   handover_by: LeaveRequestPerson | null;
   leave_entitlement: {
+    /** Days left for this leave type, e.g. "6.00". */
+    balance_days?: string | null;
     leave_policy: { name: string; code: string } | null;
   } | null;
 }
