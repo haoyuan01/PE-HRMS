@@ -125,6 +125,9 @@ export interface LeaveRequestDetail {
   leave_request_dates: LeaveRequestDay[];
   user: LeaveRequestPerson;
   manager_approver: LeaveRequestPerson | null;
+  /** Who actually approved/rejected at each stage; null until they act. */
+  manager_action_by?: LeaveRequestPerson | null;
+  director_action_by?: LeaveRequestPerson | null;
   handover_by: LeaveRequestPerson | null;
   leave_entitlement: {
     /** Days left for this leave type, e.g. "6.00". */

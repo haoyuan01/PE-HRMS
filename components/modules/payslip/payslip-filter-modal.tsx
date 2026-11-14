@@ -2,14 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { FormSelect } from "@/components/common/form-select";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-
-const FIELD =
-  "w-full rounded-lg border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
 
 export interface PayslipFilters {
   month: number;
@@ -70,105 +68,58 @@ export function PayslipFilterModal({
         {/* Filter Fields */}
         <div className="mt-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-on-surface-variant">
-                Month
-              </label>
-              <select
-                value={filters.month}
-                onChange={(e) =>
-                  setFilters((f) => ({ ...f, month: Number(e.target.value) }))
-                }
-                className={FIELD}
-              >
-                <option value={0}>All</option>
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-on-surface-variant">
-                Year
-              </label>
-              <select
-                value={filters.year}
-                onChange={(e) =>
-                  setFilters((f) => ({ ...f, year: Number(e.target.value) }))
-                }
-                className={FIELD}
-              >
-                <option value={0}>All</option>
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <FormSelect
+              label="Month"
+              value={String(filters.month)}
+              onChange={(v) => setFilters((f) => ({ ...f, month: Number(v) }))}
+              options={[
+                { value: "0", label: "All" },
+                ...MONTHS.map((m, i) => ({ value: String(i + 1), label: m })),
+              ]}
+            />
+            <FormSelect
+              label="Year"
+              value={String(filters.year)}
+              onChange={(v) => setFilters((f) => ({ ...f, year: Number(v) }))}
+              options={[
+                { value: "0", label: "All" },
+                ...years.map((y) => ({ value: String(y), label: String(y) })),
+              ]}
+            />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Department
-            </label>
-            <select
-              value={filters.department}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, department: e.target.value }))
-              }
-              className={FIELD}
-            >
-              <option value="all">All Departments</option>
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormSelect
+            label="Department"
+            value={filters.department}
+            onChange={(v) => setFilters((f) => ({ ...f, department: v }))}
+            options={[
+              { value: "all", label: "All Departments" },
+              ...departments.map((d) => ({ value: d, label: d })),
+            ]}
+          />
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Branch
-            </label>
-            <select
-              value={filters.branch}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, branch: e.target.value }))
-              }
-              className={FIELD}
-            >
-              <option value="all">All Branches</option>
-              {branches.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormSelect
+            label="Branch"
+            value={filters.branch}
+            onChange={(v) => setFilters((f) => ({ ...f, branch: v }))}
+            options={[
+              { value: "all", label: "All Branches" },
+              ...branches.map((b) => ({ value: b, label: b })),
+            ]}
+          />
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Status
-            </label>
-            <select
-              value={filters.status}
-              onChange={(e) =>
-                setFilters((f) => ({
-                  ...f,
-                  status: e.target.value as PayslipFilters["status"],
-                }))
-              }
-              className={FIELD}
-            >
-              <option value="all">All Status</option>
-              <option value="published">Published</option>
-              <option value="not">Not Published</option>
-            </select>
-          </div>
+          <FormSelect
+            label="Status"
+            value={filters.status}
+            onChange={(v) =>
+              setFilters((f) => ({ ...f, status: v as PayslipFilters["status"] }))
+            }
+            options={[
+              { value: "all", label: "All Status" },
+              { value: "published", label: "Published" },
+              { value: "not", label: "Not Published" },
+            ]}
+          />
         </div>
 
         {/* Actions */}

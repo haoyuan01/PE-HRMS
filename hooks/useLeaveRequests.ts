@@ -12,6 +12,8 @@ interface UseLeaveRequestsParams {
   show_all: boolean;
   /** "MM-YYYY", or null for every month. */
   month_year: string | null;
+  /** "pending" | "approved" | "rejected", or null for every status. */
+  status: string | null;
 }
 
 export function useLeaveRequests(params: UseLeaveRequestsParams) {
@@ -20,7 +22,7 @@ export function useLeaveRequests(params: UseLeaveRequestsParams) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { page, size, show_all, month_year } = params;
+  const { page, size, show_all, month_year, status } = params;
 
   // Each fetch takes a number; only the latest one may update state, so a slow
   // My List response can't land on top of the Staff List (or vice versa).
@@ -36,6 +38,7 @@ export function useLeaveRequests(params: UseLeaveRequestsParams) {
         size,
         show_all,
         month_year,
+        status,
       });
       if (requestId !== latestRequest.current) return;
       setRequests(response.data);
@@ -46,7 +49,7 @@ export function useLeaveRequests(params: UseLeaveRequestsParams) {
     } finally {
       if (requestId === latestRequest.current) setIsLoading(false);
     }
-  }, [page, size, show_all, month_year]);
+  }, [page, size, show_all, month_year, status]);
 
   useEffect(() => {
     fetch();

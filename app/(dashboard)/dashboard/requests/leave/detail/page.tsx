@@ -45,6 +45,39 @@ function dayDurationLabel(d: LeaveRequestDay) {
   return d.is_first_half ? "First Half (AM)" : "Second Half (PM)";
 }
 
+// One reviewer's decision ("Approved by …" / "Rejected by …"), matching the
+// bar on the expense claim detail page.
+function ReviewDecisionBar({
+  approved,
+  name,
+}: {
+  approved: boolean;
+  name: string;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium ${
+        approved
+          ? "bg-emerald-500/10 text-emerald-600"
+          : "bg-ds-error/10 text-ds-error"
+      }`}
+    >
+      {approved ? (
+        <Check className="h-4 w-4 shrink-0" />
+      ) : (
+        <X className="h-4 w-4 shrink-0" />
+      )}
+      <span>
+        {approved ? "Approved" : "Rejected"} by {name}
+      </span>
+    </div>
+  );
+}
+
+function personName(p: LeaveRequestDetail["user"] | null | undefined) {
+  return p?.personal?.full_name || p?.email || null;
+}
+
 function requestStatus(r: LeaveRequestDetail) {
   const handoverRejected =
     !!r.handover_by && !!r.handover_action_at && !r.handover_approved;
@@ -56,15 +89,40 @@ function requestStatus(r: LeaveRequestDetail) {
     return { label: "Rejected", className: "bg-ds-error/10 text-ds-error" };
   if (r.manager_approved && r.director_approved)
     return { label: "Approved", className: "bg-emerald-500/10 text-emerald-600" };
+
+  // Still pending: name the first step that hasn't been done yet, in the order
+  // handover (only when there is one) → manager → director.
+  const pending = "bg-amber-500/10 text-amber-600";
+  if (r.handover_by && !r.handover_action_at)
+    return {
+      label: "Pending Handover",
+      className: pending,
+      waitingFor: personName(r.handover_by),
+      role: "handover person",
+    };
+  if (!r.manager_approved)
+    return {
+      label: "Pending Manager Approval",
+      className: pending,
+      waitingFor: personName(r.manager_approver),
+      role: "manager",
+    };
   return {
-    label: "Pending Approval",
-    className: "bg-amber-500/10 text-amber-600",
+    label: "Pending Director Approval",
+    className: pending,
+    waitingFor: null,
+    role: "director",
   };
 }
 
 function LeaveDetailContent() {
   const router = useRouter();
-  const uuid = useSearchParams().get("uuid") ?? "";
+  const searchParams = useSearchParams();
+  const uuid = searchParams.get("uuid") ?? "";
+  // Opened from the Staff List (?tab=staff): show who applied. From My List
+  // the applicant is the viewer, so the name is hidden.
+  const fromStaffList = searchParams.get("tab") === "staff";
+  const listRoute = fromStaffList ? `${LIST_ROUTE}?tab=staff` : LIST_ROUTE;
   const isManager = useAuthStore((s) => s.isManager);
   const isDirector = useAuthStore((s) => s.isDirector);
   const currentUserUuid = useAuthStore((s) => s.user?.uuid);
@@ -111,7 +169,7 @@ function LeaveDetailContent() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push(LIST_ROUTE)}
+            onClick={() => router.push(listRoute)}
             className="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -121,7 +179,13 @@ function LeaveDetailContent() {
               Leave Detail
             </h1>
             <p className="mt-1 text-sm text-on-surface-variant">
-              Review the details of this leave request.
+              {status && "role" in status
+                ? `Waiting for ${
+                    status.waitingFor
+                      ? `${status.waitingFor} (${status.role})`
+                      : `the ${status.role}`
+                  } to review this request.`
+                : "Review the details of this leave request."}
             </p>
           </div>
         </div>
@@ -149,13 +213,19 @@ function LeaveDetailContent() {
         <div className="space-y-6">
           {/* Main info */}
           <section className="rounded-2xl bg-surface-container-lowest p-4 shadow-[var(--shadow-ambient)] sm:p-6">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-3">
-              <div className="space-y-2">
-                <p className={FIELD_LABEL}>Applicant Name</p>
-                <div className={FIELD_BOX}>
-                  {leave.user?.personal?.full_name ?? leave.user?.email ?? "—"}
+            <div
+              className={`grid grid-cols-1 gap-x-6 gap-y-5 ${
+                fromStaffList ? "md:grid-cols-3" : "md:grid-cols-2"
+              }`}
+            >
+              {fromStaffList && (
+                <div className="space-y-2">
+                  <p className={FIELD_LABEL}>Applicant Name</p>
+                  <div className={FIELD_BOX}>
+                    {leave.user?.personal?.full_name ?? leave.user?.email ?? "—"}
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="space-y-2">
                 <p className={FIELD_LABEL}>Leave Type</p>
                 <div className={FIELD_BOX}>
@@ -297,6 +367,28 @@ function LeaveDetailContent() {
                 </span>
               </a>
             </section>
+          )}
+
+          {/* Decisions so far: manager first, then director. */}
+          {(leave.manager_action_at || leave.director_action_at) && (
+            <div className="space-y-3">
+              {leave.manager_action_at && (
+                <ReviewDecisionBar
+                  approved={leave.manager_approved}
+                  name={
+                    personName(leave.manager_action_by) ??
+                    personName(leave.manager_approver) ??
+                    "Manager"
+                  }
+                />
+              )}
+              {leave.director_action_at && (
+                <ReviewDecisionBar
+                  approved={leave.director_approved}
+                  name={personName(leave.director_action_by) ?? "Director"}
+                />
+              )}
+            </div>
           )}
 
           {/* Manager / director review actions */}

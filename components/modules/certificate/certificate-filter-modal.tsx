@@ -2,9 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
-
-const FIELD =
-  "w-full rounded-lg border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
+import { FormSelect } from "@/components/common/form-select";
 
 export interface CertificateFilters {
   department: string;
@@ -59,45 +57,25 @@ export function CertificateFilterModal({
 
         {/* Filter Fields */}
         <div className="mt-6 space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Department
-            </label>
-            <select
-              value={filters.department}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, department: e.target.value }))
-              }
-              className={FIELD}
-            >
-              <option value="all">All Departments</option>
-              {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormSelect
+            label="Department"
+            value={filters.department}
+            onChange={(v) => setFilters((f) => ({ ...f, department: v }))}
+            options={[
+              { value: "all", label: "All Departments" },
+              ...departments.map((d) => ({ value: d, label: d })),
+            ]}
+          />
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Branch
-            </label>
-            <select
-              value={filters.branch}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, branch: e.target.value }))
-              }
-              className={FIELD}
-            >
-              <option value="all">All Branches</option>
-              {branches.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormSelect
+            label="Branch"
+            value={filters.branch}
+            onChange={(v) => setFilters((f) => ({ ...f, branch: v }))}
+            options={[
+              { value: "all", label: "All Branches" },
+              ...branches.map((b) => ({ value: b, label: b })),
+            ]}
+          />
         </div>
 
         {/* Actions */}

@@ -2,9 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
-
-const FIELD =
-  "w-full rounded-lg border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
+import { FormSelect } from "@/components/common/form-select";
 
 export interface AnnouncementFilters {
   published: "all" | "published" | "not";
@@ -54,25 +52,21 @@ export function AnnouncementFilterModal({
 
         {/* Filter Fields */}
         <div className="mt-6 space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Status
-            </label>
-            <select
-              value={filters.published}
-              onChange={(e) =>
-                setFilters((f) => ({
-                  ...f,
-                  published: e.target.value as AnnouncementFilters["published"],
-                }))
-              }
-              className={FIELD}
-            >
-              <option value="all">All Status</option>
-              <option value="published">Published</option>
-              <option value="not">Not Published</option>
-            </select>
-          </div>
+          <FormSelect
+            label="Status"
+            value={filters.published}
+            onChange={(v) =>
+              setFilters((f) => ({
+                ...f,
+                published: v as AnnouncementFilters["published"],
+              }))
+            }
+            options={[
+              { value: "all", label: "All Status" },
+              { value: "published", label: "Published" },
+              { value: "not", label: "Not Published" },
+            ]}
+          />
         </div>
 
         {/* Actions */}

@@ -3,16 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { lookupApi, type LookupItem } from "@/lib/api/lookup";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-const FIELD_TRIGGER =
-  "border-0 bg-surface-container-low px-4 py-3 text-on-surface focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all w-full rounded-lg text-base md:text-sm h-auto";
+import { FormSelect } from "@/components/common/form-select";
 
 export interface UserFilters {
   department: string;
@@ -84,53 +75,24 @@ export function UserFilterModal({
 
         {/* Filter Fields */}
         <div className="mt-6 space-y-4">
-          {/* Department */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Department
-            </label>
-            <Select
-              value={department}
-              onValueChange={(v) => setDepartment(v ?? "")}
-              items={departments.map((d) => ({ value: d.uuid, label: d.name }))}
-            >
-              <SelectTrigger className={FIELD_TRIGGER}>
-                <SelectValue placeholder="All Departments" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Departments</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.uuid} value={d.uuid} label={d.name}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Position */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Position
-            </label>
-            <Select
-              value={position}
-              onValueChange={(v) => setPosition(v ?? "")}
-              items={positions.map((p) => ({ value: p.uuid, label: p.name }))}
-            >
-              <SelectTrigger className={FIELD_TRIGGER}>
-                <SelectValue placeholder="All Positions" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Positions</SelectItem>
-                {positions.map((p) => (
-                  <SelectItem key={p.uuid} value={p.uuid} label={p.name}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <FormSelect
+            label="Department"
+            value={department}
+            onChange={setDepartment}
+            options={[
+              { value: "", label: "All Departments" },
+              ...departments.map((d) => ({ value: d.uuid, label: d.name })),
+            ]}
+          />
+          <FormSelect
+            label="Position"
+            value={position}
+            onChange={setPosition}
+            options={[
+              { value: "", label: "All Positions" },
+              ...positions.map((p) => ({ value: p.uuid, label: p.name })),
+            ]}
+          />
         </div>
 
         {/* Actions */}

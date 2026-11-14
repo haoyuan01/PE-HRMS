@@ -2,10 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { FormSelect } from "@/components/common/form-select";
 import type { LookupItem } from "@/lib/api/lookup";
-
-const FIELD =
-  "w-full rounded-lg border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
 
 export interface EventFilters {
   department: string;
@@ -61,65 +59,41 @@ export function EventFilterModal({
 
         {/* Filter Fields */}
         <div className="mt-6 space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Department
-            </label>
-            <select
-              value={filters.department}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, department: e.target.value }))
-              }
-              className={FIELD}
-            >
-              <option value="">All Departments</option>
-              {departments.map((d) => (
-                <option key={d.uuid} value={d.uuid}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormSelect
+            label="Department"
+            value={filters.department}
+            onChange={(v) => setFilters((f) => ({ ...f, department: v }))}
+            options={[
+              { value: "", label: "All Departments" },
+              ...departments.map((d) => ({ value: d.uuid, label: d.name })),
+            ]}
+          />
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Branch Office
-            </label>
-            <select
-              value={filters.office}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, office: e.target.value }))
-              }
-              className={FIELD}
-            >
-              <option value="">All Branches</option>
-              {offices.map((o) => (
-                <option key={o.uuid} value={o.uuid}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormSelect
+            label="Branch Office"
+            value={filters.office}
+            onChange={(v) => setFilters((f) => ({ ...f, office: v }))}
+            options={[
+              { value: "", label: "All Branches" },
+              ...offices.map((o) => ({ value: o.uuid, label: o.name })),
+            ]}
+          />
 
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-on-surface-variant">
-              Status
-            </label>
-            <select
-              value={filters.published}
-              onChange={(e) =>
-                setFilters((f) => ({
-                  ...f,
-                  published: e.target.value as EventFilters["published"],
-                }))
-              }
-              className={FIELD}
-            >
-              <option value="all">All Status</option>
-              <option value="published">Published</option>
-              <option value="not">Not Published</option>
-            </select>
-          </div>
+          <FormSelect
+            label="Status"
+            value={filters.published}
+            onChange={(v) =>
+              setFilters((f) => ({
+                ...f,
+                published: v as EventFilters["published"],
+              }))
+            }
+            options={[
+              { value: "all", label: "All Status" },
+              { value: "published", label: "Published" },
+              { value: "not", label: "Not Published" },
+            ]}
+          />
         </div>
 
         {/* Actions */}

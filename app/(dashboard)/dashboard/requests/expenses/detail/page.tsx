@@ -139,7 +139,12 @@ function ReviewActions({
 
 function ClaimDetailContent() {
   const router = useRouter();
-  const uuid = useSearchParams().get("uuid") ?? "";
+  const searchParams = useSearchParams();
+  const uuid = searchParams.get("uuid") ?? "";
+  // Opened from the Staff List (?tab=staff): show who applied. From My List
+  // the applicant is the viewer, so the name is hidden.
+  const fromStaffList = searchParams.get("tab") === "staff";
+  const listRoute = fromStaffList ? `${LIST_ROUTE}?tab=staff` : LIST_ROUTE;
   const isManager = useAuthStore((s) => s.isManager);
   const isDirector = useAuthStore((s) => s.isDirector);
   const currentUserUuid = useAuthStore((s) => s.user?.uuid);
@@ -226,7 +231,7 @@ function ClaimDetailContent() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push(LIST_ROUTE)}
+            onClick={() => router.push(listRoute)}
             className="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -270,6 +275,14 @@ function ClaimDetailContent() {
             </div>
 
             <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+              {fromStaffList && (
+                <div className="space-y-2 md:col-span-2">
+                  <p className={FIELD_LABEL}>Applicant Name</p>
+                  <div className={FIELD_BOX}>
+                    {claim.user?.personal?.full_name ?? claim.user?.email ?? "—"}
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <p className={FIELD_LABEL}>Manager for Approval</p>
                 <div className={FIELD_BOX}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import axios from "axios";
@@ -9,6 +9,7 @@ import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FormSelect } from "@/components/common/form-select";
 import { movementApi } from "@/lib/api/movement";
 import { lookupApi, type LookupItem } from "@/lib/api/lookup";
 import type { Movement } from "@/types/movement";
@@ -17,8 +18,6 @@ const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
 const FIELD_INPUT =
   "border-0 bg-surface-container-low px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 focus-visible:bg-surface-container-lowest focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
-const FIELD_SELECT =
-  "w-full rounded-lg border-0 bg-surface-container-low py-3 pl-4 pr-10 text-sm text-on-surface focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
 
 const schema = z
   .object({
@@ -60,6 +59,7 @@ export function MovementFormModal({
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     setValue,
@@ -86,9 +86,8 @@ export function MovementFormModal({
     }
   }, [startDate, endDate, setValue]);
 
-  // The <select> options load asynchronously, so re-apply the edit values once
-  // the matching options exist — otherwise the native select falls back to
-  // "Select ..." and the staff / movement type look unselected.
+  // The dropdown options load asynchronously, so re-apply the edit values once
+  // the matching options exist, so the staff / movement type show as selected.
   useEffect(() => {
     if (movement && staff.length) {
       setValue("user_uuid", movement.user?.uuid ?? "");
@@ -157,45 +156,40 @@ export function MovementFormModal({
 
         {/* Body */}
         <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
-          <div className="space-y-2">
-            <Label htmlFor="mv_staff" className={FIELD_LABEL}>
-              Staff *
-            </Label>
-            <select id="mv_staff" className={FIELD_SELECT} {...register("user_uuid")}>
-              <option value="">Select staff</option>
-              {staff.map((s) => (
-                <option key={s.uuid} value={s.uuid}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            {errors.user_uuid && (
-              <p className="text-xs text-ds-error">{errors.user_uuid.message}</p>
+          <Controller
+            name="user_uuid"
+            control={control}
+            render={({ field }) => (
+              <FormSelect
+                id="mv_staff"
+                label="Staff *"
+                placeholder="Select staff"
+                value={field.value}
+                onChange={field.onChange}
+                options={staff.map((s) => ({ value: s.uuid, label: s.name }))}
+                error={errors.user_uuid?.message}
+              />
             )}
-          </div>
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="mv_type" className={FIELD_LABEL}>
-              Movement Type *
-            </Label>
-            <select
-              id="mv_type"
-              className={FIELD_SELECT}
-              {...register("movement_type_uuid")}
-            >
-              <option value="">Select movement type</option>
-              {movementTypes.map((t) => (
-                <option key={t.uuid} value={t.uuid}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-            {errors.movement_type_uuid && (
-              <p className="text-xs text-ds-error">
-                {errors.movement_type_uuid.message}
-              </p>
+          <Controller
+            name="movement_type_uuid"
+            control={control}
+            render={({ field }) => (
+              <FormSelect
+                id="mv_type"
+                label="Movement Type *"
+                placeholder="Select movement type"
+                value={field.value}
+                onChange={field.onChange}
+                options={movementTypes.map((t) => ({
+                  value: t.uuid,
+                  label: t.name,
+                }))}
+                error={errors.movement_type_uuid?.message}
+              />
             )}
-          </div>
+          />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">

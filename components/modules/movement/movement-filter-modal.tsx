@@ -2,10 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { FormSelect } from "@/components/common/form-select";
 import type { LookupItem } from "@/lib/api/lookup";
-
-const FIELD =
-  "w-full rounded-lg border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
 
 export interface MovementFilters {
   movement_type: string;
@@ -50,23 +48,15 @@ export function MovementFilterModal({
     options: LookupItem[],
     allLabel: string
   ) => (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-on-surface-variant">
-        {label}
-      </label>
-      <select
-        value={filters[key]}
-        onChange={(e) => setFilters((f) => ({ ...f, [key]: e.target.value }))}
-        className={FIELD}
-      >
-        <option value="">{allLabel}</option>
-        {options.map((o) => (
-          <option key={o.uuid} value={o.uuid}>
-            {o.name}
-          </option>
-        ))}
-      </select>
-    </div>
+    <FormSelect
+      label={label}
+      value={filters[key]}
+      onChange={(v) => setFilters((f) => ({ ...f, [key]: v }))}
+      options={[
+        { value: "", label: allLabel },
+        ...options.map((o) => ({ value: o.uuid, label: o.name })),
+      ]}
+    />
   );
 
   return (

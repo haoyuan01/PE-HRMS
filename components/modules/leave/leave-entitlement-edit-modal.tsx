@@ -6,6 +6,7 @@ import { ChevronDown, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { FormSelect } from "@/components/common/form-select";
 import { leaveEntitlementApi } from "@/lib/api/leaveEntitlement";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type {
@@ -185,20 +186,13 @@ export function LeaveEntitlementEditModal({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="relative mt-3">
-            <select
-              value={policyUuid}
-              onChange={(e) => setPolicyUuid(e.target.value)}
-              className="h-9 w-full appearance-none rounded-lg border-0 bg-surface-container-low pl-3 pr-9 text-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-ds-primary/30"
-            >
-              {policies.map((p) => (
-                <option key={p.uuid} value={p.uuid}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
-          </div>
+          <FormSelect
+            className="mt-3"
+            placeholder="Leave type"
+            value={policyUuid}
+            onChange={setPolicyUuid}
+            options={policies.map((p) => ({ value: p.uuid, label: p.name }))}
+          />
         </div>
 
         {/* Body */}

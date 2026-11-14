@@ -14,6 +14,8 @@ import { ExportModal } from "@/components/modules/requests/export-modal";
 import {
   LeaveFilterModal,
   DEFAULT_LEAVE_FILTERS,
+  LEAVE_STATUS_OPTIONS,
+  toStatus,
   MONTH_NAMES,
   toMonthYear,
   type LeaveFilters,
@@ -36,9 +38,13 @@ export default function LeaveFormPage() {
   const [filters, setFilters] = useState<LeaveFilters>(DEFAULT_LEAVE_FILTERS);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const monthYear = toMonthYear(filters);
-  const filterChip = monthYear
-    ? `${MONTH_NAMES[Number(filters.month) - 1]} ${filters.year}`
-    : null;
+  const status = toStatus(filters);
+  const filterChips = [
+    monthYear ? `${MONTH_NAMES[Number(filters.month) - 1]} ${filters.year}` : null,
+    status
+      ? LEAVE_STATUS_OPTIONS.find((o) => o.value === filters.status)?.label ?? status
+      : null,
+  ].filter((c): c is string => c !== null);
 
   // A new filter is a new result set, so go back to its first page.
   const applyFilters = (next: LeaveFilters) => {
@@ -61,6 +67,7 @@ export default function LeaveFormPage() {
     size: PAGE_SIZE,
     show_all: effectiveTab === "staff",
     month_year: monthYear,
+    status,
   });
 
   // Status summary cards — managers/directors only. Same tab and month as
@@ -116,12 +123,15 @@ export default function LeaveFormPage() {
             <SlidersHorizontal className="h-4 w-4" />
             Filters
           </button>
-          {filterChip && (
-            <span className="inline-flex items-center rounded-full bg-surface-container-high px-3 py-1 text-xs font-medium text-on-surface-variant">
-              {filterChip}
+          {filterChips.map((chip) => (
+            <span
+              key={chip}
+              className="inline-flex items-center rounded-full bg-surface-container-high px-3 py-1 text-xs font-medium text-on-surface-variant"
+            >
+              {chip}
             </span>
-          )}
-          {filterChip && (
+          ))}
+          {filterChips.length > 0 && (
             <button
               type="button"
               onClick={() => applyFilters(DEFAULT_LEAVE_FILTERS)}
@@ -177,7 +187,9 @@ export default function LeaveFormPage() {
               isLoading={isLoading}
               showStaff={effectiveTab === "staff"}
               onView={(r) =>
-                router.push(`/dashboard/requests/leave/detail?uuid=${r.uuid}`)
+                router.push(
+                  `/dashboard/requests/leave/detail?uuid=${r.uuid}&tab=${effectiveTab}`
+                )
               }
             />
             {pagination && pagination.total > 0 && (

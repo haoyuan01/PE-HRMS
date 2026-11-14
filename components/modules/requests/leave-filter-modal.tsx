@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import { X } from "lucide-react";
-
-const FIELD =
-  "w-full rounded-lg border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
+import {
+  FormSelect,
+  type SelectOption,
+} from "@/components/common/form-select";
 
 export const MONTH_NAMES = [
   "January",
@@ -21,13 +22,33 @@ export const MONTH_NAMES = [
   "December",
 ];
 
+/** The API's status values; "all" sends no status. */
+export type LeaveStatusFilter = "all" | "pending" | "approved" | "rejected";
+
+export const LEAVE_STATUS_OPTIONS: { value: LeaveStatusFilter; label: string }[] = [
+  { value: "all", label: "All Statuses" },
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+];
+
 /** month is 1–12 and year a 4-digit year; "all" means not filtered. */
 export interface LeaveFilters {
   month: string;
   year: string;
+  status: LeaveStatusFilter;
 }
 
-export const DEFAULT_LEAVE_FILTERS: LeaveFilters = { month: "all", year: "all" };
+export const DEFAULT_LEAVE_FILTERS: LeaveFilters = {
+  month: "all",
+  year: "all",
+  status: "all",
+};
+
+/** The API's status value, or null to show every status. */
+export function toStatus(filters: LeaveFilters): string | null {
+  return filters.status === "all" ? null : filters.status;
+}
 
 /** The API's month_year value ("MM-YYYY"), or null to show every month. */
 export function toMonthYear(filters: LeaveFilters): string | null {
@@ -53,6 +74,14 @@ export function LeaveFilterModal({
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 7 }, (_, i) => String(currentYear + 1 - i));
+  const monthOptions: SelectOption[] = [
+    { value: "all", label: "All Months" },
+    ...MONTH_NAMES.map((name, i) => ({ value: String(i + 1), label: name })),
+  ];
+  const yearOptions: SelectOption[] = [
+    { value: "all", label: "All Years" },
+    ...years.map((y) => ({ value: y, label: y })),
+  ];
 
   // The API filters by month and year together, so both or neither.
   const isIncomplete = (filters.month === "all") !== (filters.year === "all");
@@ -80,60 +109,37 @@ export function LeaveFilterModal({
 
         {/* Filter Fields */}
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <label
-              htmlFor="leave-filter-month"
-              className="text-sm font-medium text-on-surface-variant"
-            >
-              Month
-            </label>
-            <select
-              id="leave-filter-month"
-              value={filters.month}
-              onChange={(e) =>
-                setFilters((f) => ({
-                  month: e.target.value,
-                  // Picking a month with no year defaults to this year.
-                  year:
-                    e.target.value !== "all" && f.year === "all"
-                      ? String(currentYear)
-                      : f.year,
-                }))
-              }
-              className={FIELD}
-            >
-              <option value="all">All Months</option>
-              {MONTH_NAMES.map((name, i) => (
-                <option key={name} value={String(i + 1)}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label
-              htmlFor="leave-filter-year"
-              className="text-sm font-medium text-on-surface-variant"
-            >
-              Year
-            </label>
-            <select
-              id="leave-filter-year"
-              value={filters.year}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, year: e.target.value }))
-              }
-              className={FIELD}
-            >
-              <option value="all">All Years</option>
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormSelect
+            label="Month"
+            value={filters.month}
+            options={monthOptions}
+            onChange={(month) =>
+              setFilters((f) => ({
+                ...f,
+                month,
+                // Picking a month with no year defaults to this year.
+                year:
+                  month !== "all" && f.year === "all"
+                    ? String(currentYear)
+                    : f.year,
+              }))
+            }
+          />
+          <FormSelect
+            label="Year"
+            value={filters.year}
+            options={yearOptions}
+            onChange={(year) => setFilters((f) => ({ ...f, year }))}
+          />
+          <FormSelect
+            label="Status"
+            className="sm:col-span-2"
+            value={filters.status}
+            options={LEAVE_STATUS_OPTIONS}
+            onChange={(status) =>
+              setFilters((f) => ({ ...f, status: status as LeaveStatusFilter }))
+            }
+          />
         </div>
 
         {isIncomplete && (

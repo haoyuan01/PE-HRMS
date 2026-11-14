@@ -1,13 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import axios from "axios";
 import { FileText, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
+import { FormSelect } from "@/components/common/form-select";
 import { ReceiptDropzone } from "@/components/modules/requests/receipt-dropzone";
 import { payrollApi } from "@/lib/api/payroll";
 import type { PayrollItem } from "@/types/payroll";
@@ -19,8 +20,6 @@ const MONTHS = [
 
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
-const FIELD_SELECT =
-  "w-full rounded-lg border-0 bg-surface-container-low px-4 py-3 text-sm text-on-surface focus-visible:bg-surface-container-lowest focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ds-primary/30 transition-all";
 
 const schema = z.object({
   month: z.string().min(1, "Month is required"),
@@ -66,6 +65,7 @@ export function PayslipFormModal({
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
@@ -150,38 +150,40 @@ export function PayslipFormModal({
         {/* Body */}
         <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="pay_month" className={FIELD_LABEL}>
-                Month *
-              </Label>
-              <select
-                id="pay_month"
-                className={FIELD_SELECT}
-                {...register("month")}
-              >
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="pay_year" className={FIELD_LABEL}>
-                Year *
-              </Label>
-              <select
-                id="pay_year"
-                className={FIELD_SELECT}
-                {...register("year")}
-              >
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Controller
+              name="month"
+              control={control}
+              render={({ field }) => (
+                <FormSelect
+                  id="pay_month"
+                  label="Month *"
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={MONTHS.map((m, i) => ({
+                    value: String(i + 1),
+                    label: m,
+                  }))}
+                  error={errors.month?.message}
+                />
+              )}
+            />
+            <Controller
+              name="year"
+              control={control}
+              render={({ field }) => (
+                <FormSelect
+                  id="pay_year"
+                  label="Year *"
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={years.map((y) => ({
+                    value: String(y),
+                    label: String(y),
+                  }))}
+                  error={errors.year?.message}
+                />
+              )}
+            />
           </div>
 
           <div className="space-y-1.5">
