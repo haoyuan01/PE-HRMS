@@ -8,7 +8,13 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { claimApi } from "@/lib/api/claim";
-import type { ClaimHeader } from "@/types/claim";
+import type { ClaimHeader, ClaimItem } from "@/types/claim";
+import {
+  claimItemStatus,
+  claimStatus,
+  isManagerRejected,
+  type StatusBadge,
+} from "@/lib/claim-status";
 
 const FIELD_LABEL =
   "text-xs font-medium uppercase tracking-widest text-on-surface-variant";
@@ -16,27 +22,6 @@ const FIELD_BOX =
   "rounded-lg bg-surface-container-low px-4 py-3 text-sm text-on-surface";
 
 const LIST_ROUTE = "/dashboard/requests/expenses";
-
-function headerStatus(
-  claim: ClaimHeader,
-  review: { managerReviewed: boolean; directorReviewed: boolean }
-) {
-  if (claim.rejected_at)
-    return { label: "Rejected", className: "bg-ds-error/10 text-ds-error" };
-  if (claim.paid_at)
-    return { label: "Paid", className: "bg-emerald-500/10 text-emerald-600" };
-  if (claim.approved_at)
-    return { label: "Approved", className: "bg-ds-primary/10 text-ds-primary" };
-  // Manager has reviewed but the General Manager (director) hasn't yet.
-  if (review.managerReviewed && !review.directorReviewed)
-    return {
-      label: "Pending General Manager Review",
-      className: "bg-sky-500/10 text-sky-600",
-    };
-  if (review.managerReviewed && review.directorReviewed)
-    return { label: "Reviewed", className: "bg-sky-500/10 text-sky-600" };
-  return { label: "Pending Review", className: "bg-amber-500/10 text-amber-600" };
-}
 
 function formatAmount(amount: string) {
   const value = Number(amount);
@@ -53,15 +38,22 @@ function fileName(path: string) {
   return path.split("/").pop() ?? path;
 }
 
-// The manager's decision on an item, shown to the General Manager so they
-// review with the first-stage outcome in view.
-function ManagerDecisionBanner({
+// One reviewer's decision on an item: "Approved by {name} ({role})".
+function DecisionBanner({
   approved,
   name,
+  role,
+  at,
 }: {
   approved: boolean;
   name: string;
+  role: string;
+  /** When they acted; omitted from the text if missing. */
+  at: string | null;
 }) {
+  const date = at ? new Date(at) : null;
+  const when =
+    date && !Number.isNaN(date.getTime()) ? format(date, "dd MMM yyyy") : null;
   return (
     <div
       className={`mt-4 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium ${
@@ -76,25 +68,86 @@ function ManagerDecisionBanner({
         <X className="h-4 w-4 shrink-0" />
       )}
       <span>
-        {approved ? "Approved" : "Rejected"} by {name}
+        {approved ? "Approved" : "Rejected"} by {name}{" "}
+        <span className="font-normal opacity-80">({role})</span>
+        {when && <> on {when}</>}
       </span>
     </div>
   );
 }
 
+function personName(p: ClaimItem["manager_action_by"], fallback: string) {
+  return p?.personal?.full_name ?? p?.email ?? fallback;
+}
+
+// Manager then General Manager decision bars — only for a stage that has
+// actually approved or rejected the item. Anything else (pending, null, an
+// unexpected value) shows no bar.
+function stageDecision(
+  definition: string | null | undefined,
+  approvedValue: string,
+  rejectedValue: string,
+  actionAt: string | null,
+  approvedFlag: boolean
+): boolean | null {
+  if (definition === approvedValue) return true;
+  if (definition === rejectedValue) return false;
+  // Only fall back to the old fields when the API sent no definition at all.
+  if (definition === undefined && actionAt) return approvedFlag;
+  return null;
+}
+
+function ItemDecisions({ item }: { item: ClaimItem }) {
+  const manager = stageDecision(
+    item.manager_approve_definition,
+    "manager_approved",
+    "manager_rejected",
+    item.manager_action_at,
+    item.manager_approved
+  );
+  const director = stageDecision(
+    item.director_approve_definition,
+    "director_approved",
+    "director_rejected",
+    item.director_action_at,
+    item.director_approved
+  );
+  const managerActed = manager !== null;
+  const directorActed = director !== null;
+  const managerApproved = manager === true;
+  const directorApproved = director === true;
+
+  return (
+    <>
+      {managerActed && (
+        <DecisionBanner
+          approved={managerApproved}
+          name={personName(item.manager_action_by, "Manager")}
+          role="Manager"
+          at={item.manager_action_at}
+        />
+      )}
+      {directorActed && (
+        <DecisionBanner
+          approved={directorApproved}
+          name={personName(item.director_action_by, "General Manager")}
+          role="General Manager"
+          at={item.director_action_at}
+        />
+      )}
+    </>
+  );
+}
+
 // Per-item outcome badge, shared by the manager and director review flows.
-function ReviewOutcome({ approved }: { approved: boolean }) {
+function ReviewOutcome({ status }: { status: StatusBadge }) {
   return (
     <div className="mt-4 flex justify-end">
-      {approved ? (
-        <span className="inline-flex rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-emerald-600">
-          Approved
-        </span>
-      ) : (
-        <span className="inline-flex rounded-full bg-ds-error/10 px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-ds-error">
-          Rejected
-        </span>
-      )}
+      <span
+        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide ${status.className}`}
+      >
+        {status.label}
+      </span>
     </div>
   );
 }
@@ -216,14 +269,16 @@ function ClaimDetailContent() {
   const managerReviewed = !!claim?.manager_reviewed_by;
   const directorReviewed = !!claim?.director_reviewed_by;
   const status = claim
-    ? headerStatus(claim, { managerReviewed, directorReviewed })
+    ? claimStatus(claim)
     : null;
   // You can't review your own claim (e.g. opened from My List) — hide all
   // review actions in that case.
   const isOwnClaim = claim?.user?.uuid === currentUserUuid;
   const canApprove = isManager && !isOwnClaim;
   // Directors (General Managers) review items with their own approve/reject.
-  const canDirectorReview = isDirector && !isOwnClaim;
+  // A manager rejection is final — the claim never reaches the director.
+  const canDirectorReview =
+    isDirector && !isOwnClaim && !(claim && isManagerRejected(claim));
 
   return (
     <div className="space-y-6">
@@ -359,62 +414,36 @@ function ClaimDetailContent() {
                     )}
                   </div>
 
-                  {/* Per-item status / review actions.
-                      - On your own claim (or as a non-reviewer) it's read-only:
-                        the outcome comes from whichever reviewer acted last —
-                        director if the director acted, else the manager, else
-                        nothing.
-                      - When reviewing someone else's claim, directors act with
-                        the director_* flow and managers with the manager_* one. */}
-                  {isOwnClaim || (!isManager && !isDirector) ? (
-                    item.director_action_at ? (
-                      <ReviewOutcome approved={item.director_approved} />
-                    ) : item.manager_action_at ? (
-                      <ReviewOutcome approved={item.manager_approved} />
-                    ) : null
-                  ) : isDirector ? (
-                    <>
-                      {/* The manager's call on this item, so the General
-                          Manager isn't reviewing blind. */}
-                      {item.manager_action_at && (
-                        <ManagerDecisionBanner
-                          approved={item.manager_approved}
-                          name={
-                            item.manager_action_by?.personal?.full_name ??
-                            item.manager_action_by?.email ??
-                            "Manager"
-                          }
-                        />
-                      )}
-                      {item.director_action_at ? (
-                        <ReviewOutcome approved={item.director_approved} />
-                      ) : (
-                        canDirectorReview && (
-                          <ReviewActions
-                            disabled={processingItem === item.uuid}
-                            onReject={() =>
-                              reviewItem(item.uuid, false, claimApi.directorRejectClaimItem)
-                            }
-                            onApprove={() =>
-                              reviewItem(item.uuid, true, claimApi.directorApproveClaimItem)
-                            }
-                          />
-                        )
-                      )}
-                    </>
-                  ) : item.manager_action_at ? (
-                    <ReviewOutcome approved={item.manager_approved} />
+                  {/* Who approved/rejected this item, shown to everyone:
+                      the manager's bar, then the General Manager's. */}
+                  <ItemDecisions item={item} />
+
+                  {/* Review actions for whoever still has to act. Directors
+                      use the director_* endpoints, managers the manager_*
+                      ones. Nobody acted yet and nothing to do → Pending. */}
+                  {isDirector && canDirectorReview && !item.director_action_at ? (
+                    <ReviewActions
+                      disabled={processingItem === item.uuid}
+                      onReject={() =>
+                        reviewItem(item.uuid, false, claimApi.directorRejectClaimItem)
+                      }
+                      onApprove={() =>
+                        reviewItem(item.uuid, true, claimApi.directorApproveClaimItem)
+                      }
+                    />
+                  ) : !isDirector && canApprove && !item.manager_action_at ? (
+                    <ReviewActions
+                      disabled={processingItem === item.uuid}
+                      onReject={() =>
+                        reviewItem(item.uuid, false, claimApi.rejectClaimItem)
+                      }
+                      onApprove={() =>
+                        reviewItem(item.uuid, true, claimApi.approveClaimItem)
+                      }
+                    />
                   ) : (
-                    canApprove && (
-                      <ReviewActions
-                        disabled={processingItem === item.uuid}
-                        onReject={() =>
-                          reviewItem(item.uuid, false, claimApi.rejectClaimItem)
-                        }
-                        onApprove={() =>
-                          reviewItem(item.uuid, true, claimApi.approveClaimItem)
-                        }
-                      />
+                    claimItemStatus(item).label === "Pending" && (
+                      <ReviewOutcome status={claimItemStatus(item)} />
                     )
                   )}
                 </div>
@@ -439,9 +468,16 @@ function ClaimDetailContent() {
                   )
                 }
                 disabled={isReleasing}
-                className="rounded-[0.75rem] bg-gradient-to-br from-ds-primary to-ds-primary-dim px-6 py-3 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-[0.75rem] bg-emerald-600 px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {isReleasing ? "Submitting..." : "Reviewed"}
+                {isReleasing ? (
+                  "Submitting..."
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Confirm Reviewed
+                  </>
+                )}
               </button>
             </div>
           )}

@@ -5,12 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useDashboardClaims } from "@/hooks/useDashboardClaims";
 import type { ClaimHeader } from "@/types/claim";
-
-function claimStatus(claim: ClaimHeader) {
-  if (claim.director_reviewed_by)
-    return { label: "Reviewed", className: "bg-sky-500/10 text-sky-600" };
-  return { label: "Pending", className: "bg-amber-500/10 text-amber-600" };
-}
+import { claimStatus } from "@/lib/claim-status";
 
 function money(value: string) {
   const n = Number(value);

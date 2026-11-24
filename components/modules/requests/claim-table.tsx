@@ -15,14 +15,7 @@ import {
   RecordCardFields,
 } from "@/components/common/record-card";
 import type { ClaimHeader } from "@/types/claim";
-
-function claimStatus(claim: ClaimHeader) {
-  // Only two states in the list: Reviewed once the director (General Manager)
-  // has signed off, otherwise Pending.
-  if (claim.director_reviewed_by)
-    return { label: "Reviewed", className: "bg-sky-500/10 text-sky-600" };
-  return { label: "Pending", className: "bg-amber-500/10 text-amber-600" };
-}
+import { claimStatus } from "@/lib/claim-status";
 
 function formatAmount(amount: string) {
   const value = Number(amount);
