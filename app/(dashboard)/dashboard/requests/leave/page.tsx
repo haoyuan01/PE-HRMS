@@ -38,7 +38,9 @@ export default function LeaveFormPage() {
   const [filters, setFilters] = useState<LeaveFilters>(DEFAULT_LEAVE_FILTERS);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const monthYear = toMonthYear(filters);
-  const status = toStatus(filters);
+  // The Status filter is for the Staff List only; My List never sends it.
+  const isStaffTab = canViewStaff && tab === "staff";
+  const status = isStaffTab ? toStatus(filters) : null;
   const filterChips = [
     monthYear ? `${MONTH_NAMES[Number(filters.month) - 1]} ${filters.year}` : null,
     status
@@ -81,6 +83,8 @@ export default function LeaveFormPage() {
   const switchTab = (next: Tab) => {
     setTab(next);
     setPage(1);
+    // Drop the Staff-only status filter so it isn't silently kept for later.
+    if (next === "my") setFilters((f) => ({ ...f, status: "all" }));
   };
 
   return (
@@ -208,6 +212,7 @@ export default function LeaveFormPage() {
 
       {isFilterOpen && (
         <LeaveFilterModal
+          showStatus={isStaffTab}
           onClose={() => setIsFilterOpen(false)}
           initialFilters={filters}
           onApply={(next) => {

@@ -62,12 +62,15 @@ interface LeaveFilterModalProps {
   onClose: () => void;
   onApply: (filters: LeaveFilters) => void;
   initialFilters: LeaveFilters;
+  /** Status is a Staff List filter; hide it on My List. */
+  showStatus: boolean;
 }
 
 export function LeaveFilterModal({
   onClose,
   onApply,
   initialFilters,
+  showStatus,
 }: LeaveFilterModalProps) {
   const [filters, setFilters] = useState<LeaveFilters>(initialFilters);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -131,15 +134,20 @@ export function LeaveFilterModal({
             options={yearOptions}
             onChange={(year) => setFilters((f) => ({ ...f, year }))}
           />
-          <FormSelect
-            label="Status"
-            className="sm:col-span-2"
-            value={filters.status}
-            options={LEAVE_STATUS_OPTIONS}
-            onChange={(status) =>
-              setFilters((f) => ({ ...f, status: status as LeaveStatusFilter }))
-            }
-          />
+          {showStatus && (
+            <FormSelect
+              label="Status"
+              className="sm:col-span-2"
+              value={filters.status}
+              options={LEAVE_STATUS_OPTIONS}
+              onChange={(status) =>
+                setFilters((f) => ({
+                  ...f,
+                  status: status as LeaveStatusFilter,
+                }))
+              }
+            />
+          )}
         </div>
 
         {isIncomplete && (
