@@ -110,6 +110,8 @@ export const claimApi = {
     name?: string;
     sortBy?: string;
     orderBy?: string;
+    /** See CLAIM_STATUS_OPTIONS (e.g. "pending_gm_review"); null/omitted shows all. */
+    status?: string | null;
   }): Promise<ClaimHeaderListResponse> => {
     const query: Record<string, unknown> = {
       page: params.page ?? 1,
@@ -118,6 +120,7 @@ export const claimApi = {
     if (params?.name) query.name = params.name;
     if (params?.sortBy) query.sortBy = params.sortBy;
     if (params?.orderBy) query.orderBy = params.orderBy;
+    if (params.status) query.status = params.status;
 
     const response = await apiClient.get<ClaimHeaderListResponse>(
       "/claim-headers",

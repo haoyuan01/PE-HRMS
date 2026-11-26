@@ -5,6 +5,16 @@ export interface StatusBadge {
   className: string;
 }
 
+/** Status filter values for GET /claim-headers?status=…; "all" sends none. */
+export const CLAIM_STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "all", label: "All Statuses" },
+  { value: "pending_manager_review", label: "Pending Manager Review" },
+  { value: "pending_gm_review", label: "Pending GM Review" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected_by_manager", label: "Rejected by Manager" },
+  { value: "rejected_by_gm", label: "Rejected by GM" },
+];
+
 const GREEN = "bg-emerald-500/10 text-emerald-600";
 const PRIMARY = "bg-ds-primary/10 text-ds-primary";
 const RED = "bg-ds-error/10 text-ds-error";

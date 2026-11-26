@@ -67,7 +67,7 @@ export const leaveRequestApi = {
   // The backend scopes the list from the token: show_all=1 returns the Staff
   // List (requests the current user can review), show_all=0 their own (My List).
   // month_year is "MM-YYYY"; null (omitted) shows every month.
-  // status is "pending" | "approved" | "rejected"; null (omitted) shows all.
+  // status is "pending" | "approved" | "reject"; null (omitted) shows all.
   getLeaveRequests: async (params: {
     page: number;
     size: number;

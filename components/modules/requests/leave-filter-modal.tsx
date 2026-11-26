@@ -2,10 +2,7 @@
 
 import { useRef, useState } from "react";
 import { X } from "lucide-react";
-import {
-  FormSelect,
-  type SelectOption,
-} from "@/components/common/form-select";
+import { FormSelect, type SelectOption } from "@/components/common/form-select";
 
 export const MONTH_NAMES = [
   "January",
@@ -23,20 +20,24 @@ export const MONTH_NAMES = [
 ];
 
 /** The API's status values; "all" sends no status. */
-export type LeaveStatusFilter = "all" | "pending" | "approved" | "rejected";
+export type LeaveStatusFilter = "all" | "pending" | "approved" | "reject";
 
-export const LEAVE_STATUS_OPTIONS: { value: LeaveStatusFilter; label: string }[] = [
+export const LEAVE_STATUS_OPTIONS: {
+  value: LeaveStatusFilter;
+  label: string;
+}[] = [
   { value: "all", label: "All Statuses" },
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
+  { value: "reject", label: "Rejected" },
 ];
 
 /** month is 1–12 and year a 4-digit year; "all" means not filtered. */
 export interface LeaveFilters {
   month: string;
   year: string;
-  status: LeaveStatusFilter;
+  /** "all", or an API status value (leave: LeaveStatusFilter; claims: their own). */
+  status: string;
 }
 
 export const DEFAULT_LEAVE_FILTERS: LeaveFilters = {
@@ -64,6 +65,10 @@ interface LeaveFilterModalProps {
   initialFilters: LeaveFilters;
   /** Status is a Staff List filter; hide it on My List. */
   showStatus: boolean;
+  /** Month and Year fields; off for status-only filters (expense claims). */
+  showPeriod?: boolean;
+  /** Status choices; defaults to the leave statuses. */
+  statusOptions?: SelectOption[];
 }
 
 export function LeaveFilterModal({
@@ -71,12 +76,16 @@ export function LeaveFilterModal({
   onApply,
   initialFilters,
   showStatus,
+  showPeriod = true,
+  statusOptions = LEAVE_STATUS_OPTIONS,
 }: LeaveFilterModalProps) {
   const [filters, setFilters] = useState<LeaveFilters>(initialFilters);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 7 }, (_, i) => String(currentYear + 1 - i));
+  const years = Array.from({ length: 7 }, (_, i) =>
+    String(currentYear + 1 - i),
+  );
   const monthOptions: SelectOption[] = [
     { value: "all", label: "All Months" },
     ...MONTH_NAMES.map((name, i) => ({ value: String(i + 1), label: name })),
@@ -112,40 +121,39 @@ export function LeaveFilterModal({
 
         {/* Filter Fields */}
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormSelect
-            label="Month"
-            value={filters.month}
-            options={monthOptions}
-            onChange={(month) =>
-              setFilters((f) => ({
-                ...f,
-                month,
-                // Picking a month with no year defaults to this year.
-                year:
-                  month !== "all" && f.year === "all"
-                    ? String(currentYear)
-                    : f.year,
-              }))
-            }
-          />
-          <FormSelect
-            label="Year"
-            value={filters.year}
-            options={yearOptions}
-            onChange={(year) => setFilters((f) => ({ ...f, year }))}
-          />
+          {showPeriod && (
+            <>
+              <FormSelect
+                label="Month"
+                value={filters.month}
+                options={monthOptions}
+                onChange={(month) =>
+                  setFilters((f) => ({
+                    ...f,
+                    month,
+                    // Picking a month with no year defaults to this year.
+                    year:
+                      month !== "all" && f.year === "all"
+                        ? String(currentYear)
+                        : f.year,
+                  }))
+                }
+              />
+              <FormSelect
+                label="Year"
+                value={filters.year}
+                options={yearOptions}
+                onChange={(year) => setFilters((f) => ({ ...f, year }))}
+              />
+            </>
+          )}
           {showStatus && (
             <FormSelect
               label="Status"
               className="sm:col-span-2"
               value={filters.status}
-              options={LEAVE_STATUS_OPTIONS}
-              onChange={(status) =>
-                setFilters((f) => ({
-                  ...f,
-                  status: status as LeaveStatusFilter,
-                }))
-              }
+              options={statusOptions}
+              onChange={(status) => setFilters((f) => ({ ...f, status }))}
             />
           )}
         </div>

@@ -12,6 +12,7 @@ interface UseClaimHeadersParams {
   name?: string;
   sortBy?: string;
   orderBy?: string;
+  status?: string | null;
 }
 
 export function useClaimHeaders(params: UseClaimHeadersParams) {
@@ -46,6 +47,7 @@ export function useClaimHeaders(params: UseClaimHeadersParams) {
     params.name,
     params.sortBy,
     params.orderBy,
+    params.status,
   ]);
 
   useEffect(() => {
